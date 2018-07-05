@@ -91,7 +91,7 @@ lazy val slickCodeGenTask = Def.task {
   val s = streams.value
   val outputDir = dir.getPath // place generated files in sbt's managed sources folder
   toError(r.run("com.ferris.codegen.CustomizedCodeGenerator", cp.files, Array(outputDir), s.log))
-  val fname = outputDir + "/com/ferris/planning/table/Tables.scala"
+  val fname = outputDir + "/com/ferris/timetable/table/Tables.scala"
   Seq(file(fname))
 }
 
@@ -102,6 +102,6 @@ enablePlugins(DockerPlugin)
 dockerExposedPorts := Seq(9000)
 dockerEntrypoint := Seq("bin/%s" format executableScriptName.value, "-Dconfig.resource=docker.conf")
 
-flywayUrl := "jdbc:mysql://localhost:3306/planning"
+flywayUrl := "jdbc:mysql://localhost:3306/timetable"
 
 flywayUser := "root"

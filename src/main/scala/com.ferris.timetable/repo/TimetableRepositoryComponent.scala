@@ -6,6 +6,7 @@ import com.ferris.timetable.command.Commands.{CreateMessage, UpdateMessage}
 import com.ferris.timetable.db.TablesComponent
 import com.ferris.timetable.db.conversions.TableConversions
 import com.ferris.timetable.model.Model.Message
+import com.ferris.timetable.service.exceptions.Exceptions.MessageNotFoundException
 
 import scala.concurrent.{ExecutionContext, Future}
 

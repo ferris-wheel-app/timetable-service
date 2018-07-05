@@ -7,26 +7,26 @@ import akka.http.scaladsl.testkit.ScalatestRouteTest
 import akka.stream.ActorMaterializer
 import com.ferris.microservice.exceptions.ApiExceptionFormats
 import com.ferris.microservice.service.{Envelope, MicroServiceConfig}
-import com.ferris.planning.contract.format.PlanningRestFormats
-import com.ferris.planning.server.PlanningServer
-import com.ferris.planning.service.PlanningServiceComponent
+import com.ferris.timetable.contract.format.TimetableRestFormats
+import com.ferris.timetable.server.TimetableServer
+import com.ferris.timetable.service.TimetableServiceComponent
 import org.scalatest.{FunSpec, Matchers, Outcome}
 import org.scalatest.mockito.MockitoSugar.mock
 import spray.json._
 
-trait MockPlanningServiceComponent extends PlanningServiceComponent {
-  override val planningService: PlanningService = mock[PlanningService]
+trait MockTimetableServiceComponent extends TimetableServiceComponent {
+  override val timetableService: TimetableService = mock[TimetableService]
 }
 
-trait RouteTestFramework extends FunSpec with ScalatestRouteTest with PlanningRestFormats with ApiExceptionFormats with Matchers {
+trait RouteTestFramework extends FunSpec with ScalatestRouteTest with TimetableRestFormats with ApiExceptionFormats with Matchers {
 
-  var testServer: PlanningServer with PlanningServiceComponent = _
+  var testServer: TimetableServer with TimetableServiceComponent = _
   var route: Route = _
 
   implicit def envFormat[T](implicit ev: JsonFormat[T]): RootJsonFormat[Envelope[T]] = jsonFormat2(Envelope[T])
 
   override def withFixture(test: NoArgTest): Outcome = {
-    testServer = new PlanningServer with MockPlanningServiceComponent {
+    testServer = new TimetableServer with MockTimetableServiceComponent {
       override implicit lazy val system = ActorSystem()
 
       override implicit lazy val executor = system.dispatcher

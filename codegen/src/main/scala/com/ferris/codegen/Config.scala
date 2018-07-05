@@ -1,6 +1,6 @@
 package com.ferris.codegen
 
-object Config{
+object Config {
   val scriptDir = "src/main/resources/db/migration/"
   val initScripts = FileUtils.listFiles(scriptDir)
   val url = "jdbc:h2:mem:base;INIT=" + initScripts.map(s"runscript from '$scriptDir"+_+"'").mkString("\\;")

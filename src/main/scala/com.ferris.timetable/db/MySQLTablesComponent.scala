@@ -1,6 +1,6 @@
 package com.ferris.timetable.db
 
-import com.ferris.planning.table.Tables
+import com.ferris.timetable.table.Tables
 
 import slick.jdbc.MySQLProfile
 

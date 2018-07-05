@@ -1,6 +1,6 @@
 package com.ferris.timetable.repo
 
-import com.ferris.planning.db.H2Tables
+import com.ferris.timetable.db.H2Tables
 import org.scalatest.time.Span
 import slick.jdbc.H2Profile.api._
 
