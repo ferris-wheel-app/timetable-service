@@ -4,7 +4,11 @@ import akka.http.scaladsl.model.StatusCodes
 import akka.http.scaladsl.server.{PathMatchers, Route}
 import akka.stream.Materializer
 import com.ferris.microservice.directive.FerrisDirectives
+import com.ferris.timetable.contract.format.TimetableRestFormats
 import com.ferris.timetable.contract.resource.Resources.In._
+import com.ferris.timetable.service.TimetableServiceComponent
+import com.ferris.timetable.service.conversions.ExternalToCommand._
+import com.ferris.timetable.service.conversions.ModelToView._
 
 import scala.concurrent.ExecutionContext
 
@@ -66,7 +70,7 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Res
     }
   }
 
-  val planningRoute: Route = {
+  val timetableRoute: Route = {
     createMessageRoute ~
     updateMessageRoute ~
     getMessagesRoute ~

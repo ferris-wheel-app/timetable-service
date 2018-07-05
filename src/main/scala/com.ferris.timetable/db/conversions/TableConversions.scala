@@ -5,8 +5,8 @@ import java.time.LocalDate
 import java.util.UUID
 
 import akka.http.scaladsl.model.DateTime
-import com.ferris.planning.table.Tables
-import com.ferris.planning.model.Model._
+import com.ferris.timetable.table.Tables
+import com.ferris.timetable.model.Model._
 
 import scala.collection.immutable.Iterable
 import scala.language.implicitConversions

@@ -3,7 +3,7 @@ package com.ferris.timetable.utils
 import java.sql.Timestamp
 import java.time.{LocalDateTime, ZoneId}
 
-object PlanningImplicits {
+object TimetableImplicits {
   implicit class LocalDateTimeOps(time: LocalDateTime) {
     def toLong: Long = {
       time.atZone(ZoneId.systemDefault()).toInstant.toEpochMilli

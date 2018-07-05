@@ -2,10 +2,10 @@ package com.ferris.timetable.route
 
 import akka.http.scaladsl.model.{StatusCode, StatusCodes}
 import akka.http.scaladsl.model.StatusCodes.Success
-import com.ferris.planning.contract.resource.Resources.Out._
-import com.ferris.planning.model.Model._
-import com.ferris.planning.service.conversions.ModelToView._
-import com.ferris.planning.service.exceptions.Exceptions._
+import com.ferris.timetable.contract.resource.Resources.Out.{DeletionResult, MessageView}
+import com.ferris.timetable.model.Model.Message
+import com.ferris.timetable.service.conversions.ModelToView._
+import com.ferris.timetable.service.exceptions.Exceptions.MessageNotFoundException
 
 trait ResponseMappings {
 
