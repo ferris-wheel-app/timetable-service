@@ -1,21 +1,15 @@
 package com.ferris.timetable.repo
 
-import java.time.LocalDateTime
 import java.util.UUID
 
-import com.ferris.timetable.model.Model._
 import org.scalatest.{AsyncFunSpec, BeforeAndAfterEach, Matchers}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.OptionValues._
 import com.ferris.timetable.sample.SampleData.{domain => SD}
 import com.ferris.timetable.service.exceptions.Exceptions._
-import com.ferris.timetable.utils.MockTimerComponent
-import com.ferris.timetable.utils.TimetableImplicits._
-import com.ferris.timetable.utils.MockTimerComponent
-import org.mockito.Matchers.{eq => eqTo}
-import org.mockito.Mockito.when
+import com.ferris.utils.MockTimerComponent
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class TimetableRepositoryTest extends AsyncFunSpec

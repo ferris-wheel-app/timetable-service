@@ -7,7 +7,7 @@ import com.ferris.microservice.service.MicroServiceConfig
 import com.ferris.timetable.db.MySQLTablesComponent
 import com.ferris.timetable.repo.SqlTimetableRepositoryComponent
 import com.ferris.timetable.service.DefaultTimetableServiceComponent
-import com.ferris.timetable.utils.DefaultTimerComponent
+import com.ferris.utils.DefaultTimerComponent
 
 object TimetableMicroService extends TimetableServer
   with DefaultTimetableServiceComponent

@@ -1,7 +1,7 @@
 package com.ferris.timetable.repo
 
 import com.ferris.timetable.db.H2TablesComponent
-import com.ferris.timetable.utils.TimerComponent
+import com.ferris.utils.TimerComponent
 
 import scala.concurrent.ExecutionContext
 import scala.util.Random
