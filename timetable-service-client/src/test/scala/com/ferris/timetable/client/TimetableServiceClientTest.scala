@@ -7,8 +7,8 @@ import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport._
 import akka.http.scaladsl.marshalling.Marshal
 import akka.http.scaladsl.model.{HttpResponse, RequestEntity, ResponseEntity}
 import akka.stream.ActorMaterializer
+import com.ferris.microservice.resource.DeletionResult
 import com.ferris.timetable.contract.format.TimetableRestFormats
-import com.ferris.timetable.contract.resource.Resources.Out.DeletionResult
 import com.ferris.timetable.contract.sample.{SampleData => SD}
 import com.ferris.timetable.server.TimetableServer
 import org.mockito.Mockito._

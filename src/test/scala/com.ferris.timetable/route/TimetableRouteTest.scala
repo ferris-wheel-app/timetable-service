@@ -3,6 +3,7 @@ package com.ferris.timetable.route
 import java.util.UUID
 
 import akka.http.scaladsl.model.StatusCodes
+import com.ferris.microservice.resource.DeletionResult
 import com.ferris.microservice.service.Envelope
 import com.ferris.timetable.contract.resource.Resources.Out._
 import com.ferris.timetable.service.conversions.ExternalToCommand._

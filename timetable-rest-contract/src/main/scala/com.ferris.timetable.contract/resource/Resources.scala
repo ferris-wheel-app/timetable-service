@@ -1,5 +1,6 @@
 package com.ferris.timetable.contract.resource
 
+import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
 object Resources {
@@ -15,6 +16,18 @@ object Resources {
       sender: Option[String],
       content: Option[String]
     )
+
+    case class TimeBlockCreation (
+      start: LocalDateTime,
+      finish: LocalDateTime,
+      task: Option[UUID]
+    )
+
+    case class TimeBlockUpdate (
+      start: Option[LocalDateTime],
+      finish: Option[LocalDateTime],
+      task: Option[UUID]
+    )
   }
 
   object Out {
@@ -25,13 +38,29 @@ object Resources {
       content: String
     )
 
-    case class DeletionResult(
-      isSuccessful: Boolean
+    sealed trait TimeBlockView {
+      def start: LocalDateTime
+      def finish: LocalDateTime
+    }
+
+    case class ConcreteBlockView (
+      uuid: UUID,
+      start: LocalDateTime,
+      finish: LocalDateTime,
+      task: Option[UUID]
     )
 
-    object DeletionResult {
-      val successful = DeletionResult(true)
-      val unsuccessful = DeletionResult(false)
-    }
+    case class BufferBlockView (
+      uuid: UUID,
+      start: LocalDateTime,
+      finish: LocalDateTime,
+      firstTask: Option[UUID],
+      secondTask: Option[UUID]
+    )
+
+    case class TimetableView (
+      date: LocalDate,
+      blocks: Seq[TimeBlockView]
+    )
   }
 }

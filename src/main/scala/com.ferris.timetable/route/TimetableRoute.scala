@@ -12,7 +12,7 @@ import com.ferris.timetable.service.conversions.ModelToView._
 
 import scala.concurrent.ExecutionContext
 
-trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with ResponseMappings {
+trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with TimetableResponseMappings {
   this: TimetableServiceComponent =>
 
   implicit def routeEc: ExecutionContext

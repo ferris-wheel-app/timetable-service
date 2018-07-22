@@ -5,10 +5,11 @@ import java.util.UUID
 import akka.http.scaladsl.model.Uri
 import akka.http.scaladsl.model.Uri.Path._
 import akka.stream.ActorMaterializer
+import com.ferris.microservice.resource.DeletionResult
 import com.ferris.service.client.{HttpServer, ServiceClient}
 import com.ferris.timetable.contract.format.TimetableRestFormats
 import com.ferris.timetable.contract.resource.Resources.In.{MessageCreation, MessageUpdate}
-import com.ferris.timetable.contract.resource.Resources.Out.{DeletionResult, MessageView}
+import com.ferris.timetable.contract.resource.Resources.Out.MessageView
 
 import scala.concurrent.Future
 
