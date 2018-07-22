@@ -120,20 +120,23 @@ trait Tables {
    *  @param id Database column ID SqlType(BIGINT), AutoInc, PrimaryKey
    *  @param uuid Database column UUID SqlType(VARCHAR), Length(36,true)
    *  @param date Database column DATE SqlType(DATE)
-   *  @param timeBlockId Database column TIME_BLOCK_ID SqlType(BIGINT)
+   *  @param startTime Database column START_TIME SqlType(TIME)
+   *  @param finishTime Database column FINISH_TIME SqlType(TIME)
+   *  @param taskType Database column TASK_TYPE SqlType(VARCHAR), Length(36,true)
+   *  @param taskId Database column TASK_ID SqlType(VARCHAR), Length(36,true)
    *  @param temporalStatus Database column TEMPORAL_STATUS SqlType(VARCHAR), Length(36,true)
    *  @param isDone Database column IS_DONE SqlType(TINYINT), Default(0) */
-  case class ScheduledTimeBlockRow(id: Long, uuid: String, date: java.sql.Date, timeBlockId: Long, temporalStatus: String, isDone: Byte = 0)
+  case class ScheduledTimeBlockRow(id: Long, uuid: String, date: java.sql.Date, startTime: java.sql.Time, finishTime: java.sql.Time, taskType: String, taskId: String, temporalStatus: String, isDone: Byte = 0)
   /** GetResult implicit for fetching ScheduledTimeBlockRow objects using plain SQL queries */
-  implicit def GetResultScheduledTimeBlockRow(implicit e0: GR[Long], e1: GR[String], e2: GR[java.sql.Date], e3: GR[Byte]): GR[ScheduledTimeBlockRow] = GR{
+  implicit def GetResultScheduledTimeBlockRow(implicit e0: GR[Long], e1: GR[String], e2: GR[java.sql.Date], e3: GR[java.sql.Time], e4: GR[Byte]): GR[ScheduledTimeBlockRow] = GR{
     prs => import prs._
-    ScheduledTimeBlockRow.tupled((<<[Long], <<[String], <<[java.sql.Date], <<[Long], <<[String], <<[Byte]))
+    ScheduledTimeBlockRow.tupled((<<[Long], <<[String], <<[java.sql.Date], <<[java.sql.Time], <<[java.sql.Time], <<[String], <<[String], <<[String], <<[Byte]))
   }
   /** Table description of table SCHEDULED_TIME_BLOCK. Objects of this class serve as prototypes for rows in queries. */
   class ScheduledTimeBlockTable(_tableTag: Tag) extends profile.api.Table[ScheduledTimeBlockRow](_tableTag, "SCHEDULED_TIME_BLOCK") {
-    def * = (id, uuid, date, timeBlockId, temporalStatus, isDone) <> (ScheduledTimeBlockRow.tupled, ScheduledTimeBlockRow.unapply)
+    def * = (id, uuid, date, startTime, finishTime, taskType, taskId, temporalStatus, isDone) <> (ScheduledTimeBlockRow.tupled, ScheduledTimeBlockRow.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (Rep.Some(id), Rep.Some(uuid), Rep.Some(date), Rep.Some(timeBlockId), Rep.Some(temporalStatus), Rep.Some(isDone)).shaped.<>({r=>import r._; _1.map(_=> ScheduledTimeBlockRow.tupled((_1.get, _2.get, _3.get, _4.get, _5.get, _6.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = (Rep.Some(id), Rep.Some(uuid), Rep.Some(date), Rep.Some(startTime), Rep.Some(finishTime), Rep.Some(taskType), Rep.Some(taskId), Rep.Some(temporalStatus), Rep.Some(isDone)).shaped.<>({r=>import r._; _1.map(_=> ScheduledTimeBlockRow.tupled((_1.get, _2.get, _3.get, _4.get, _5.get, _6.get, _7.get, _8.get, _9.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
     /** Database column ID SqlType(BIGINT), AutoInc, PrimaryKey */
     val id: Rep[Long] = column[Long]("ID", O.AutoInc, O.PrimaryKey)
@@ -141,15 +144,18 @@ trait Tables {
     val uuid: Rep[String] = column[String]("UUID", O.Length(36,varying=true))
     /** Database column DATE SqlType(DATE) */
     val date: Rep[java.sql.Date] = column[java.sql.Date]("DATE")
-    /** Database column TIME_BLOCK_ID SqlType(BIGINT) */
-    val timeBlockId: Rep[Long] = column[Long]("TIME_BLOCK_ID")
+    /** Database column START_TIME SqlType(TIME) */
+    val startTime: Rep[java.sql.Time] = column[java.sql.Time]("START_TIME")
+    /** Database column FINISH_TIME SqlType(TIME) */
+    val finishTime: Rep[java.sql.Time] = column[java.sql.Time]("FINISH_TIME")
+    /** Database column TASK_TYPE SqlType(VARCHAR), Length(36,true) */
+    val taskType: Rep[String] = column[String]("TASK_TYPE", O.Length(36,varying=true))
+    /** Database column TASK_ID SqlType(VARCHAR), Length(36,true) */
+    val taskId: Rep[String] = column[String]("TASK_ID", O.Length(36,varying=true))
     /** Database column TEMPORAL_STATUS SqlType(VARCHAR), Length(36,true) */
     val temporalStatus: Rep[String] = column[String]("TEMPORAL_STATUS", O.Length(36,varying=true))
     /** Database column IS_DONE SqlType(TINYINT), Default(0) */
     val isDone: Rep[Byte] = column[Byte]("IS_DONE", O.Default(0))
-
-    /** Foreign key referencing TimeBlockTable (database name TIME_BLOCK_FK_2) */
-    lazy val timeBlockTableFk = foreignKey("TIME_BLOCK_FK_2", timeBlockId, TimeBlockTable)(r => r.id, onUpdate=ForeignKeyAction.Restrict, onDelete=ForeignKeyAction.Restrict)
 
     /** Uniqueness Index over (uuid) (database name CONSTRAINT_INDEX_E) */
     val index1 = index("CONSTRAINT_INDEX_E", uuid, unique=true)
