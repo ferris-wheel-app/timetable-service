@@ -28,6 +28,26 @@ object Resources {
       finish: Option[LocalDateTime],
       task: Option[UUID]
     )
+
+    case class TimetableTemplateCreation (
+      day: String,
+      blocks: Seq[TimeBlockCreation]
+    )
+
+    case class TimetableTemplateUpdate (
+      day: Option[String],
+      blocks: Option[Seq[TimeBlockCreation]]
+    )
+
+    case class RoutineCreation (
+      name: String,
+      templates: Seq[TimetableTemplateCreation]
+    )
+
+    case class RoutineUpdate (
+      name: Option[String],
+      templates: Option[Seq[TimetableTemplateCreation]]
+    )
   }
 
   object Out {
@@ -48,7 +68,7 @@ object Resources {
       start: LocalDateTime,
       finish: LocalDateTime,
       task: Option[UUID]
-    )
+    ) extends TimeBlockView
 
     case class BufferBlockView (
       uuid: UUID,
@@ -56,6 +76,18 @@ object Resources {
       finish: LocalDateTime,
       firstTask: Option[UUID],
       secondTask: Option[UUID]
+    ) extends TimeBlockView
+
+    case class TimetableTemplateView (
+      uuid: UUID,
+      day: String,
+      blocks: Seq[TimeBlockView]
+    )
+
+    case class RoutineView (
+      uuid: UUID,
+      name: String,
+      templates: Seq[TimetableTemplateView]
     )
 
     case class TimetableView (
