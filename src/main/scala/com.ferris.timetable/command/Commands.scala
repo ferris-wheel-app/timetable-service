@@ -29,8 +29,8 @@ object Commands {
   )
 
   case class UpdateTimetableTemplate (
-    day: DayOfTheWeek,
-    blocks: Seq[UpdateTimeBlock]
+    day: Option[DayOfTheWeek],
+    blocks: Option[Seq[UpdateTimeBlock]]
   )
 
   case class CreateRoutine (
@@ -40,6 +40,6 @@ object Commands {
 
   case class UpdateRoutine (
     name: Option[String],
-    templates: Option[Seq[CreateTimetableTemplate]]
+    templates: Option[Seq[UpdateTimetableTemplate]]
   )
 }

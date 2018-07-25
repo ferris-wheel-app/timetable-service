@@ -36,7 +36,7 @@ object Resources {
 
     case class TimetableTemplateUpdate (
       day: Option[String],
-      blocks: Option[Seq[TimeBlockCreation]]
+      blocks: Option[Seq[TimeBlockUpdate]]
     )
 
     case class RoutineCreation (
@@ -46,7 +46,7 @@ object Resources {
 
     case class RoutineUpdate (
       name: Option[String],
-      templates: Option[Seq[TimetableTemplateCreation]]
+      templates: Option[Seq[TimetableTemplateUpdate]]
     )
   }
 

@@ -2,8 +2,8 @@ package com.ferris.timetable.service
 
 import java.util.UUID
 
-import com.ferris.timetable.command.Commands.{CreateMessage, UpdateMessage}
-import com.ferris.timetable.model.Model.Message
+import com.ferris.timetable.command.Commands._
+import com.ferris.timetable.model.Model.{Message, Routine, Timetable, TimetableTemplate}
 import com.ferris.timetable.repo.TimetableRepositoryComponent
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -13,14 +13,26 @@ trait TimetableServiceComponent {
 
   trait TimetableService {
     def createMessage(creation: CreateMessage)(implicit ex: ExecutionContext): Future[Message]
+    def createRoutine(routine: CreateRoutine)(implicit ex: ExecutionContext): Future[Routine]
+    def createTemplate(template: CreateTimetableTemplate)(implicit ex: ExecutionContext): Future[TimetableTemplate]
+    def generateTimetable(implicit ex: ExecutionContext): Future[Timetable]
 
     def updateMessage(uuid: UUID, update: UpdateMessage)(implicit ex: ExecutionContext): Future[Message]
+    def updateRoutine(uuid: UUID, update: UpdateRoutine)(implicit ex: ExecutionContext): Future[Routine]
+    def updateTemplate(uuid: UUID, update: UpdateTimetableTemplate)(implicit ex: ExecutionContext): Future[TimetableTemplate]
 
     def getMessages(implicit ex: ExecutionContext): Future[Seq[Message]]
+    def getRoutines(implicit ex: ExecutionContext): Future[Seq[Routine]]
+    def getTemplates(routineId: UUID)(implicit ex: ExecutionContext): Future[Seq[TimetableTemplate]]
 
     def getMessage(uuid: UUID)(implicit ex: ExecutionContext): Future[Option[Message]]
+    def getRoutine(uuid: UUID)(implicit ex: ExecutionContext): Future[Option[Routine]]
+    def getTemplate(uuid: UUID)(implicit ex: ExecutionContext): Future[Option[TimetableTemplate]]
+    def getCurrentTimetable(implicit ex: ExecutionContext): Future[Option[Timetable]]
 
     def deleteMessage(uuid: UUID)(implicit ex: ExecutionContext): Future[Boolean]
+    def deleteRoutine(uuid: UUID)(implicit ex: ExecutionContext): Future[Boolean]
+    def deleteTemplate(uuid: UUID)(implicit ex: ExecutionContext): Future[Boolean]
   }
 }
 
@@ -35,9 +47,19 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
       repo.createMessage(creation)
     }
 
+    override def createRoutine(routine: CreateRoutine)(implicit ex: ExecutionContext) = ???
+
+    override def createTemplate(template: CreateTimetableTemplate)(implicit ex: ExecutionContext) = ???
+
+    override def generateTimetable(implicit ex: ExecutionContext) = ???
+
     override def updateMessage(uuid: UUID, update: UpdateMessage)(implicit ex: ExecutionContext): Future[Message] = {
       repo.updateMessage(uuid, update)
     }
+
+    override def updateRoutine(uuid: UUID, update: UpdateRoutine)(implicit ex: ExecutionContext) = ???
+
+    override def updateTemplate(uuid: UUID, update: UpdateTimetableTemplate)(implicit ex: ExecutionContext) = ???
 
     override def getMessages(implicit ex: ExecutionContext): Future[Seq[Message]] = {
       repo.getMessages
@@ -47,8 +69,22 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
       repo.getMessage(uuid)
     }
 
+    override def getRoutines(implicit ex: ExecutionContext) = ???
+
+    override def getRoutine(uuid: UUID)(implicit ex: ExecutionContext) = ???
+
+    override def getTemplates(routineId: UUID)(implicit ex: ExecutionContext) = ???
+
+    override def getTemplate(uuid: UUID)(implicit ex: ExecutionContext) = ???
+
+    override def getCurrentTimetable(implicit ex: ExecutionContext) = ???
+
     override def deleteMessage(uuid: UUID)(implicit ex: ExecutionContext): Future[Boolean] = {
       repo.deleteMessage(uuid)
     }
+
+    override def deleteRoutine(uuid: UUID)(implicit ex: ExecutionContext) = ???
+
+    override def deleteTemplate(uuid: UUID)(implicit ex: ExecutionContext) = ???
   }
 }

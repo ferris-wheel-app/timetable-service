@@ -2,10 +2,10 @@ package com.ferris.timetable.repo
 
 import java.util.UUID
 
-import com.ferris.timetable.command.Commands.{CreateMessage, UpdateMessage}
+import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.db.TablesComponent
 import com.ferris.timetable.db.conversions.TableConversions
-import com.ferris.timetable.model.Model.Message
+import com.ferris.timetable.model.Model._
 import com.ferris.timetable.service.exceptions.Exceptions.MessageNotFoundException
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -16,14 +16,26 @@ trait TimetableRepositoryComponent {
 
   trait TimetableRepository {
     def createMessage(creation: CreateMessage): Future[Message]
+    def createRoutine(routine: CreateRoutine): Future[Routine]
+    def createTemplate(template: CreateTimetableTemplate): Future[TimetableTemplate]
+    def generateTimetable: Future[Timetable]
 
     def updateMessage(uuid: UUID, update: UpdateMessage): Future[Message]
+    def updateRoutine(uuid: UUID, update: UpdateRoutine): Future[Routine]
+    def updateTemplate(uuid: UUID, update: UpdateTimetableTemplate): Future[TimetableTemplate]
 
     def getMessages: Future[Seq[Message]]
+    def getRoutines: Future[Seq[Routine]]
+    def getTemplates(routineId: UUID): Future[Seq[TimetableTemplate]]
 
     def getMessage(uuid: UUID): Future[Option[Message]]
+    def getRoutine(uuid: UUID): Future[Option[Routine]]
+    def getTemplate(uuid: UUID): Future[Option[TimetableTemplate]]
+    def getCurrentTimetable: Future[Option[Timetable]]
 
     def deleteMessage(uuid: UUID): Future[Boolean]
+    def deleteRoutine(uuid: UUID): Future[Boolean]
+    def deleteTemplate(uuid: UUID): Future[Boolean]
   }
 }
 
@@ -53,6 +65,12 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       db.run(action) map (row => row.asMessage)
     }
 
+    override def createRoutine(routine: CreateRoutine) = ???
+
+    override def createTemplate(template: CreateTimetableTemplate) = ???
+
+    override def generateTimetable = ???
+
     // Update endpoints
     override def updateMessage(uuid: UUID, update: UpdateMessage): Future[Message] = {
       val query = messageByUuid(uuid).map(message => (message.sender, message.content))
@@ -65,6 +83,10 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       db.run(action).map(row => row.asMessage)
     }
 
+    override def updateRoutine(uuid: UUID, update: UpdateRoutine) = ???
+
+    override def updateTemplate(uuid: UUID, update: UpdateTimetableTemplate) = ???
+
     // Get endpoints
     override def getMessages: Future[Seq[Message]] = {
       db.run(MessageTable.result.map(_.map(_.asMessage)))
@@ -74,11 +96,25 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       db.run(getMessageAction(uuid).map(_.map(_.asMessage)))
     }
 
+    override def getRoutines = ???
+
+    override def getRoutine(uuid: UUID) = ???
+
+    override def getTemplates(routineId: UUID) = ???
+
+    override def getTemplate(uuid: UUID) = ???
+
+    override def getCurrentTimetable = ???
+
     // Delete endpoints
     override def deleteMessage(uuid: UUID): Future[Boolean] = {
       val action = messageByUuid(uuid).delete
       db.run(action).map(_ > 0)
     }
+
+    override def deleteRoutine(uuid: UUID) = ???
+
+    override def deleteTemplate(uuid: UUID) = ???
 
     private def getMessageAction(uuid: UUID) = {
       messageByUuid(uuid).result.headOption
