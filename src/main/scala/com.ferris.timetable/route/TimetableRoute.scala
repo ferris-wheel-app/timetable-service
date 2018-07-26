@@ -19,6 +19,11 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Tim
   implicit val materializer: Materializer
 
   private val messagesPathSegment = "messages"
+  private val routinesPathSegment = "routines"
+  private val templatesPathSegment = "templates"
+  private val timetablesPathSegment = "timetables"
+  private val currentPathSegment = "current"
+  private val generatePathSegment = "generate"
 
   private val createMessageRoute = pathPrefix(messagesPathSegment) {
     pathEndOrSingleSlash {
@@ -27,6 +32,40 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Tim
           onSuccess(timetableService.createMessage(creation.toCommand)) { response =>
             complete(StatusCodes.OK, response.toView)
           }
+        }
+      }
+    }
+  }
+
+  private val createRoutine = pathPrefix(routinesPathSegment) {
+    pathEndOrSingleSlash {
+      post {
+        entity(as[RoutineCreation]) { creation =>
+          onSuccess(timetableService.createRoutine(creation.toCommand)) { response =>
+            complete(StatusCodes.OK, response.toView)
+          }
+        }
+      }
+    }
+  }
+
+  private val createTemplate = pathPrefix(timetablesPathSegment / templatesPathSegment) {
+    pathEndOrSingleSlash {
+      post {
+        entity(as[TimetableTemplateCreation]) { creation =>
+          onSuccess(timetableService.createTemplate(creation.toCommand)) { response =>
+            complete(StatusCodes.OK, response.toView)
+          }
+        }
+      }
+    }
+  }
+
+  private val generateTimetable = pathPrefix(timetablesPathSegment / generatePathSegment) {
+    pathEndOrSingleSlash {
+      post {
+        onSuccess(timetableService.generateTimetable) { response =>
+          complete(StatusCodes.OK, response.toView)
         }
       }
     }
