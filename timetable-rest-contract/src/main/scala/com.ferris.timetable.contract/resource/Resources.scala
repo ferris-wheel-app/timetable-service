@@ -48,6 +48,10 @@ object Resources {
       name: Option[String],
       templates: Option[Seq[TimetableTemplateUpdate]]
     )
+
+//    case class TimetableUpdate (
+//      blocks: Option[Seq[TimeBlockUpdate]]
+//    )
   }
 
   object Out {

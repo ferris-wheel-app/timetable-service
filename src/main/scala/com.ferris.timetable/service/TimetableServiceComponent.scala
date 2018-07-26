@@ -28,7 +28,7 @@ trait TimetableServiceComponent {
     def getMessage(uuid: UUID)(implicit ex: ExecutionContext): Future[Option[Message]]
     def getRoutine(uuid: UUID)(implicit ex: ExecutionContext): Future[Option[Routine]]
     def getTemplate(uuid: UUID)(implicit ex: ExecutionContext): Future[Option[TimetableTemplate]]
-    def getCurrentTimetable(implicit ex: ExecutionContext): Future[Option[Timetable]]
+    def currentTimetable(implicit ex: ExecutionContext): Future[Option[Timetable]]
 
     def deleteMessage(uuid: UUID)(implicit ex: ExecutionContext): Future[Boolean]
     def deleteRoutine(uuid: UUID)(implicit ex: ExecutionContext): Future[Boolean]
@@ -77,7 +77,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
 
     override def getTemplate(uuid: UUID)(implicit ex: ExecutionContext) = ???
 
-    override def getCurrentTimetable(implicit ex: ExecutionContext) = ???
+    override def currentTimetable(implicit ex: ExecutionContext) = ???
 
     override def deleteMessage(uuid: UUID)(implicit ex: ExecutionContext): Future[Boolean] = {
       repo.deleteMessage(uuid)

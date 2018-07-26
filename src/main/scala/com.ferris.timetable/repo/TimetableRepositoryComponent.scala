@@ -31,7 +31,7 @@ trait TimetableRepositoryComponent {
     def getMessage(uuid: UUID): Future[Option[Message]]
     def getRoutine(uuid: UUID): Future[Option[Routine]]
     def getTemplate(uuid: UUID): Future[Option[TimetableTemplate]]
-    def getCurrentTimetable: Future[Option[Timetable]]
+    def currentTimetable: Future[Option[Timetable]]
 
     def deleteMessage(uuid: UUID): Future[Boolean]
     def deleteRoutine(uuid: UUID): Future[Boolean]
@@ -104,7 +104,7 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
 
     override def getTemplate(uuid: UUID) = ???
 
-    override def getCurrentTimetable = ???
+    override def currentTimetable = ???
 
     // Delete endpoints
     override def deleteMessage(uuid: UUID): Future[Boolean] = {
