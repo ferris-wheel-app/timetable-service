@@ -65,7 +65,16 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       db.run(action) map (row => row.asMessage)
     }
 
-    override def createRoutine(routine: CreateRoutine) = ???
+    override def createRoutine(routine: CreateRoutine) = {
+      val row = RoutineRow(
+        id = 0L,
+        uuid = UUID.randomUUID,
+        name = routine.name,
+        isCurrent = false
+      )
+      val action = (RoutineTable returning RoutineTable.map(_.id)) into ((routine, id) => routine.copy(id = id)) += row
+      db.run(action) map (row => row)
+    }
 
     override def createTemplate(template: CreateTimetableTemplate) = ???
 

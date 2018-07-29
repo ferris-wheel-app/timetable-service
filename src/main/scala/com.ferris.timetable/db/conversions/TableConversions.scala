@@ -8,7 +8,6 @@ import akka.http.scaladsl.model.DateTime
 import com.ferris.timetable.table.Tables
 import com.ferris.timetable.model.Model._
 
-import scala.collection.immutable.Iterable
 import scala.language.implicitConversions
 
 class TableConversions(val tables: Tables) {
@@ -18,6 +17,13 @@ class TableConversions(val tables: Tables) {
       uuid = UUID.fromString(row.uuid),
       sender = row.sender,
       content = row.content
+    )
+  }
+
+  implicit class RoutineBuilder(val row: tables.RoutineRow) {
+    def asRoutine: Routine = Routine(
+      uuid = UUID.fromString(row.uuid),
+      name =
     )
   }
 
