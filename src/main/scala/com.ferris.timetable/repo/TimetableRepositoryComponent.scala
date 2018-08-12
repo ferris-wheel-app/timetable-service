@@ -22,6 +22,7 @@ trait TimetableRepositoryComponent {
 
     def updateMessage(uuid: UUID, update: UpdateMessage): Future[Message]
     def updateRoutine(uuid: UUID, update: UpdateRoutine): Future[Routine]
+    def startRoutine(uuid: UUID): Future[Boolean]
     def updateTemplate(uuid: UUID, update: UpdateTimetableTemplate): Future[TimetableTemplate]
 
     def getMessages: Future[Seq[Message]]

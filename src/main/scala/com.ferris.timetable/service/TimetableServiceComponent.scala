@@ -19,6 +19,7 @@ trait TimetableServiceComponent {
 
     def updateMessage(uuid: UUID, update: UpdateMessage)(implicit ex: ExecutionContext): Future[Message]
     def updateRoutine(uuid: UUID, update: UpdateRoutine)(implicit ex: ExecutionContext): Future[Routine]
+    def startRoutine(uuid: UUID): Future[Boolean]
     def updateTemplate(uuid: UUID, update: UpdateTimetableTemplate)(implicit ex: ExecutionContext): Future[TimetableTemplate]
 
     def getMessages(implicit ex: ExecutionContext): Future[Seq[Message]]
