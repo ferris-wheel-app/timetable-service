@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.event.Logging
 import akka.stream.ActorMaterializer
 import com.ferris.microservice.service.MicroServiceConfig
-import com.ferris.timetable.db.MySQLTablesComponent
+import com.ferris.timetable.db.{DatabaseComponent, MySQLTablesComponent}
 import com.ferris.timetable.repo.SqlTimetableRepositoryComponent
 import com.ferris.timetable.service.DefaultTimetableServiceComponent
 import com.ferris.utils.DefaultTimerComponent
@@ -12,6 +12,7 @@ import com.ferris.utils.DefaultTimerComponent
 object TimetableMicroService extends TimetableServer
   with DefaultTimetableServiceComponent
   with SqlTimetableRepositoryComponent
+  with DatabaseComponent
   with MySQLTablesComponent
   with DefaultTimerComponent
   with App {
@@ -24,7 +25,7 @@ object TimetableMicroService extends TimetableServer
   override val logger = Logging(system, getClass)
   override val config = MicroServiceConfig
 
-  val db = tables.profile.api.Database.forConfig("db")
+  override val db = tables.profile.api.Database.forConfig("db")
 
   startUp()
 }

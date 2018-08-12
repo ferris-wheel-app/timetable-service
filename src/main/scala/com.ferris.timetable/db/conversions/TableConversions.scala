@@ -20,12 +20,12 @@ class TableConversions(val tables: Tables) {
     )
   }
 
-  implicit class RoutineBuilder(val row: tables.RoutineRow) {
-    def asRoutine: Routine = Routine(
-      uuid = UUID.fromString(row.uuid),
-      name =
-    )
-  }
+//  implicit class RoutineBuilder(val row: tables.RoutineRow) {
+//    def asRoutine: Routine = Routine(
+//      uuid = UUID.fromString(row.uuid),
+//      name =
+//    )
+//  }
 
   implicit def uuid2String(uuid: UUID): String = uuid.toString
 

@@ -31,7 +31,7 @@ class TimetableRepositoryTest extends AsyncFunSpec
   describe("message") {
     describe("creating") {
       it("should create a message") {
-        val created = repo.createMessage(SD.messageCreation).futureValue
+        val created = db.run(repo.createMessage(SD.messageCreation)).futureValue
         created.sender shouldBe SD.messageCreation.sender
         created.content shouldBe SD.messageCreation.content
       }
@@ -39,8 +39,8 @@ class TimetableRepositoryTest extends AsyncFunSpec
 
     describe("updating") {
       it("should update a message") {
-        val original = repo.createMessage(SD.messageCreation).futureValue
-        val updated = repo.updateMessage(original.uuid, SD.messageUpdate).futureValue
+        val original = db.run(repo.createMessage(SD.messageCreation)).futureValue
+        val updated = db.run(repo.updateMessage(original.uuid, SD.messageUpdate)).futureValue
         updated should not be original
         updated.uuid shouldBe original.uuid
         updated.sender shouldBe SD.messageUpdate.sender.value
@@ -48,7 +48,7 @@ class TimetableRepositoryTest extends AsyncFunSpec
       }
 
       it("should throw an exception if a message is not found") {
-        whenReady(repo.updateMessage(UUID.randomUUID, SD.messageUpdate).failed) { exception =>
+        whenReady(db.run(repo.updateMessage(UUID.randomUUID, SD.messageUpdate)).failed) { exception =>
           exception shouldBe MessageNotFoundException()
         }
       }
@@ -56,21 +56,21 @@ class TimetableRepositoryTest extends AsyncFunSpec
 
     describe("retrieving") {
       it("should retrieve a message") {
-        val created = repo.createMessage(SD.messageCreation).futureValue
-        val retrieved = repo.getMessage(created.uuid).futureValue
+        val created = db.run(repo.createMessage(SD.messageCreation)).futureValue
+        val retrieved = db.run(repo.getMessage(created.uuid)).futureValue
         retrieved should not be empty
         retrieved.value shouldBe created
       }
 
       it("should return none if a message is not found") {
-        val retrieved = repo.getMessage(UUID.randomUUID).futureValue
+        val retrieved = db.run(repo.getMessage(UUID.randomUUID)).futureValue
         retrieved shouldBe empty
       }
 
       it("should retrieve a list of messages") {
-        val created1 = repo.createMessage(SD.messageCreation).futureValue
-        val created2 = repo.createMessage(SD.messageCreation.copy(sender = "HAL", content = "Never!")).futureValue
-        val retrieved = repo.getMessages.futureValue
+        val created1 = db.run(repo.createMessage(SD.messageCreation)).futureValue
+        val created2 = db.run(repo.createMessage(SD.messageCreation.copy(sender = "HAL", content = "Never!"))).futureValue
+        val retrieved = db.run(repo.getMessages).futureValue
         retrieved should not be empty
         retrieved shouldBe Seq(created1, created2)
       }
@@ -78,9 +78,9 @@ class TimetableRepositoryTest extends AsyncFunSpec
 
     describe("deleting") {
       it("should delete a message") {
-        val created = repo.createMessage(SD.messageCreation).futureValue
-        val deletion = repo.deleteMessage(created.uuid).futureValue
-        val retrieved = repo.getMessage(created.uuid).futureValue
+        val created = db.run(repo.createMessage(SD.messageCreation)).futureValue
+        val deletion = db.run(repo.deleteMessage(created.uuid)).futureValue
+        val retrieved = db.run(repo.getMessage(created.uuid)).futureValue
         deletion shouldBe true
         retrieved shouldBe empty
       }
