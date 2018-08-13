@@ -1,6 +1,6 @@
 package com.ferris.timetable.command
 
-import java.time.LocalDateTime
+import java.time.LocalTime
 import java.util.UUID
 
 object Commands {
@@ -10,14 +10,14 @@ object Commands {
   case class UpdateMessage(sender: Option[String], content: Option[String])
 
   case class CreateTimeBlock (
-    start: LocalDateTime,
-    finish: LocalDateTime,
+    start: LocalTime,
+    finish: LocalTime,
     task: Option[UUID]
   )
 
   case class UpdateTimeBlock (
-    start: Option[LocalDateTime],
-    finish: Option[LocalDateTime],
+    start: Option[LocalTime],
+    finish: Option[LocalTime],
     task: Option[UUID]
   )
 

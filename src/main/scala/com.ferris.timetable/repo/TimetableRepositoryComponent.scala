@@ -4,7 +4,7 @@ import java.util.UUID
 
 import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.db.DatabaseComponent
-import com.ferris.timetable.db.conversions.TableConversions
+import com.ferris.timetable.db.conversions.DomainConversions
 import com.ferris.timetable.model.Model._
 import com.ferris.timetable.service.exceptions.Exceptions.MessageNotFoundException
 
@@ -19,31 +19,26 @@ trait TimetableRepositoryComponent {
   trait TimetableRepository {
     def createMessage(creation: CreateMessage): DBIO[Message]
     def createRoutine(routine: CreateRoutine): DBIO[Routine]
-    def createTemplate(template: CreateTimetableTemplate): DBIO[TimetableTemplate]
 
     def updateMessage(uuid: UUID, update: UpdateMessage): DBIO[Message]
     def updateRoutine(uuid: UUID, update: UpdateRoutine): DBIO[Routine]
-    def updateTemplate(uuid: UUID, update: UpdateTimetableTemplate): DBIO[TimetableTemplate]
 
     def getMessages: DBIO[Seq[Message]]
     def getRoutines: DBIO[Seq[Routine]]
-    def getTemplates(routineId: UUID): DBIO[Seq[TimetableTemplate]]
 
     def getMessage(uuid: UUID): DBIO[Option[Message]]
     def getRoutine(uuid: UUID): DBIO[Option[Routine]]
-    def getTemplate(uuid: UUID): DBIO[Option[TimetableTemplate]]
     def currentTimetable: DBIO[Option[Timetable]]
 
     def deleteMessage(uuid: UUID): DBIO[Boolean]
     def deleteRoutine(uuid: UUID): DBIO[Boolean]
-    def deleteTemplate(uuid: UUID): DBIO[Boolean]
   }
 }
 
 trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
   this: DatabaseComponent =>
 
-  lazy val tableConversions = new TableConversions(tables)
+  lazy val tableConversions = new DomainConversions(tables)
   import tableConversions.tables._
   import tableConversions.tables.profile.api._
   import tableConversions._
@@ -65,19 +60,27 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       action.map(_.asMessage)
     }
 
-    override def createRoutine(routine: CreateRoutine) = {
-//      val row = RoutineRow(
-//        id = 0L,
-//        uuid = UUID.randomUUID,
-//        name = routine.name,
-//        isCurrent = false
-//      )
-//      val action = (RoutineTable returning RoutineTable.map(_.id)) into ((routine, id) => routine.copy(id = id)) += row
-//      db.run(action) map (row => row)
-      ???
-    }
+    override def createRoutine(routine: CreateRoutine): DBIO[Routine] = {
+      def insertTemplate(template: CreateTimetableTemplate, day: DayOfTheWeek): DBIO[TimetableTemplate] = {
+        val timeBlockRows = template.blocks.map { block =>
+          TimeBlockRow(
+            id = 0L,
+            startTime = java.sql.Time.valueOf(block.start),
+            finishTime = java.sql.Time.valueOf(block.finish),
+            taskType = block
+          )
+        }
+      }
 
-    override def createTemplate(template: CreateTimetableTemplate) = ???
+      val routineRow = RoutineRow(
+        id = 0L,
+        uuid = UUID.randomUUID,
+        name = routine.name,
+        isCurrent = false
+      )
+      val insertRoutine = (RoutineTable returning RoutineTable.map(_.id)) into ((routine, id) => routine.copy(id = id)) += routineRow
+      val
+    }
 
     // Update endpoints
     override def updateMessage(uuid: UUID, update: UpdateMessage): DBIO[Message] = {
@@ -92,8 +95,6 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
 
     override def updateRoutine(uuid: UUID, update: UpdateRoutine) = ???
 
-    override def updateTemplate(uuid: UUID, update: UpdateTimetableTemplate) = ???
-
     // Get endpoints
     override def getMessages: DBIO[Seq[Message]] = {
       MessageTable.result.map(_.map(_.asMessage))
@@ -107,10 +108,6 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
 
     override def getRoutine(uuid: UUID) = ???
 
-    override def getTemplates(routineId: UUID) = ???
-
-    override def getTemplate(uuid: UUID) = ???
-
     override def currentTimetable = ???
 
     // Delete endpoints
@@ -119,8 +116,6 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
     }
 
     override def deleteRoutine(uuid: UUID) = ???
-
-    override def deleteTemplate(uuid: UUID) = ???
 
     // Queries
     private def messageByUuid(uuid: UUID) = {

@@ -10,7 +10,7 @@ import com.ferris.timetable.model.Model._
 
 import scala.language.implicitConversions
 
-class TableConversions(val tables: Tables) {
+class DomainConversions(val tables: Tables) {
 
   implicit class MessageBuilder(val row: tables.MessageRow) {
     def asMessage: Message = Message(
@@ -20,12 +20,12 @@ class TableConversions(val tables: Tables) {
     )
   }
 
-//  implicit class RoutineBuilder(val row: tables.RoutineRow) {
-//    def asRoutine: Routine = Routine(
-//      uuid = UUID.fromString(row.uuid),
-//      name =
-//    )
-//  }
+  implicit class RoutineBuilder(val row: tables.RoutineRow) {
+    def asRoutine: Routine = Routine(
+      uuid = UUID.fromString(row.uuid),
+      name =
+    )
+  }
 
   implicit def uuid2String(uuid: UUID): String = uuid.toString
 

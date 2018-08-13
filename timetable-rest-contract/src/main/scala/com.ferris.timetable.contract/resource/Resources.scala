@@ -1,6 +1,6 @@
 package com.ferris.timetable.contract.resource
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.{LocalDate, LocalTime}
 import java.util.UUID
 
 object Resources {
@@ -18,14 +18,14 @@ object Resources {
     )
 
     case class TimeBlockCreation (
-      start: LocalDateTime,
-      finish: LocalDateTime,
+      start: LocalTime,
+      finish: LocalTime,
       task: Option[UUID]
     )
 
     case class TimeBlockUpdate (
-      start: Option[LocalDateTime],
-      finish: Option[LocalDateTime],
+      start: Option[LocalTime],
+      finish: Option[LocalTime],
       task: Option[UUID]
     )
 
@@ -75,19 +75,19 @@ object Resources {
     )
 
     sealed trait TimeBlockView {
-      def start: LocalDateTime
-      def finish: LocalDateTime
+      def start: LocalTime
+      def finish: LocalTime
     }
 
     case class ConcreteBlockView (
-      start: LocalDateTime,
-      finish: LocalDateTime,
+      start: LocalTime,
+      finish: LocalTime,
       task: Option[UUID]
     ) extends TimeBlockView
 
     case class BufferBlockView (
-      start: LocalDateTime,
-      finish: LocalDateTime,
+      start: LocalTime,
+      finish: LocalTime,
       firstTask: Option[UUID],
       secondTask: Option[UUID]
     ) extends TimeBlockView
