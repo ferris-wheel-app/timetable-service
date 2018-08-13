@@ -3,8 +3,6 @@ package com.ferris.timetable.command
 import java.time.LocalDateTime
 import java.util.UUID
 
-import com.ferris.timetable.model.Model.DaysOfTheWeek.DayOfTheWeek
-
 object Commands {
 
   case class CreateMessage(sender: String, content: String)
@@ -24,22 +22,32 @@ object Commands {
   )
 
   case class CreateTimetableTemplate (
-    day: DayOfTheWeek,
     blocks: Seq[CreateTimeBlock]
   )
 
   case class UpdateTimetableTemplate (
-    day: Option[DayOfTheWeek],
     blocks: Option[Seq[UpdateTimeBlock]]
   )
 
   case class CreateRoutine (
     name: String,
-    templates: Seq[CreateTimetableTemplate]
+    monday: CreateTimetableTemplate,
+    tuesday: CreateTimetableTemplate,
+    wednesday: CreateTimetableTemplate,
+    thursday: CreateTimetableTemplate,
+    friday: CreateTimetableTemplate,
+    saturday: CreateTimetableTemplate,
+    sunday: CreateTimetableTemplate
   )
 
   case class UpdateRoutine (
     name: Option[String],
-    templates: Option[Seq[UpdateTimetableTemplate]]
+    monday: Option[UpdateTimetableTemplate],
+    tuesday: Option[UpdateTimetableTemplate],
+    wednesday: Option[UpdateTimetableTemplate],
+    thursday: Option[UpdateTimetableTemplate],
+    friday: Option[UpdateTimetableTemplate],
+    saturday: Option[UpdateTimetableTemplate],
+    sunday: Option[UpdateTimetableTemplate]
   )
 }

@@ -49,7 +49,6 @@ object ModelToView {
     def toView: TimetableTemplateView = {
       TimetableTemplateView(
         uuid = timetableTemplate.uuid,
-        day = TypeResolvers.DayOfTheWeek.toString(timetableTemplate.day),
         blocks = timetableTemplate.blocks.map(_.toView)
       )
     }
@@ -60,7 +59,13 @@ object ModelToView {
       RoutineView(
         uuid = routine.uuid,
         name = routine.name,
-        templates = routine.templates.map(_.toView)
+        monday = routine.monday.toView,
+        tuesday = routine.monday.toView,
+        wednesday = routine.monday.toView,
+        thursday = routine.monday.toView,
+        friday = routine.monday.toView,
+        saturday = routine.monday.toView,
+        sunday = routine.monday.toView
       )
     }
   }

@@ -41,14 +41,12 @@ object ExternalToCommand {
 
   implicit class TimetableTemplateCreationConversion(template: TimetableTemplateCreation) extends CommandConversion[CreateTimetableTemplate] {
     override def toCommand = CreateTimetableTemplate(
-      day = TypeResolvers.DayOfTheWeek.withName(template.day),
       blocks = template.blocks.map(_.toCommand)
     )
   }
 
   implicit class TimetableTemplateUpdateConversion(template: TimetableTemplateUpdate) extends CommandConversion[UpdateTimetableTemplate] {
     override def toCommand = UpdateTimetableTemplate(
-      day = template.day.map(TypeResolvers.DayOfTheWeek.withName),
       blocks = template.blocks.map(_.map(_.toCommand))
     )
   }
@@ -56,14 +54,26 @@ object ExternalToCommand {
   implicit class RoutineCreationConversion(routine: RoutineCreation) extends CommandConversion[CreateRoutine] {
     override def toCommand = CreateRoutine(
       name = routine.name,
-      templates = routine.templates.map(_.toCommand)
+      monday = routine.monday.toCommand,
+      tuesday = routine.tuesday.toCommand,
+      wednesday = routine.wednesday.toCommand,
+      thursday = routine.thursday.toCommand,
+      friday = routine.friday.toCommand,
+      saturday = routine.saturday.toCommand,
+      sunday = routine.sunday.toCommand
     )
   }
 
   implicit class RoutineUpdateConversion(routine: RoutineUpdate) extends CommandConversion[UpdateRoutine] {
     override def toCommand = UpdateRoutine(
       name = routine.name,
-      templates = routine.templates.map(_.map(_.toCommand))
+      monday = routine.monday.map(_.toCommand),
+      tuesday = routine.tuesday.map(_.toCommand),
+      wednesday = routine.wednesday.map(_.toCommand),
+      thursday = routine.thursday.map(_.toCommand),
+      friday = routine.friday.map(_.toCommand),
+      saturday = routine.saturday.map(_.toCommand),
+      sunday = routine.sunday.map(_.toCommand)
     )
   }
 }

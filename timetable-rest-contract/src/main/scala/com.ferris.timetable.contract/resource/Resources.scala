@@ -41,12 +41,24 @@ object Resources {
 
     case class RoutineCreation (
       name: String,
-      templates: Seq[TimetableTemplateCreation]
+      monday: TimetableTemplateCreation,
+      tuesday: TimetableTemplateCreation,
+      wednesday: TimetableTemplateCreation,
+      thursday: TimetableTemplateCreation,
+      friday: TimetableTemplateCreation,
+      saturday: TimetableTemplateCreation,
+      sunday: TimetableTemplateCreation
     )
 
     case class RoutineUpdate (
       name: Option[String],
-      templates: Option[Seq[TimetableTemplateUpdate]]
+      monday: Option[TimetableTemplateUpdate],
+      tuesday: Option[TimetableTemplateUpdate],
+      wednesday: Option[TimetableTemplateUpdate],
+      thursday: Option[TimetableTemplateUpdate],
+      friday: Option[TimetableTemplateUpdate],
+      saturday: Option[TimetableTemplateUpdate],
+      sunday: Option[TimetableTemplateUpdate]
     )
 
 //    case class TimetableUpdate (
@@ -84,14 +96,19 @@ object Resources {
 
     case class TimetableTemplateView (
       uuid: UUID,
-      day: String,
       blocks: Seq[TimeBlockView]
     )
 
     case class RoutineView (
       uuid: UUID,
       name: String,
-      templates: Seq[TimetableTemplateView]
+      monday: TimetableTemplateView,
+      tuesday: TimetableTemplateView,
+      wednesday: TimetableTemplateView,
+      thursday: TimetableTemplateView,
+      friday: TimetableTemplateView,
+      saturday: TimetableTemplateView,
+      sunday: TimetableTemplateView
     )
 
     case class TimetableView (

@@ -8,7 +8,7 @@ import com.ferris.timetable.db.conversions.TableConversions
 import com.ferris.timetable.model.Model._
 import com.ferris.timetable.service.exceptions.Exceptions.MessageNotFoundException
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 trait TimetableRepositoryComponent {
 
