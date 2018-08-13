@@ -18,13 +18,11 @@ create table routine (
 
 create table time_block (
   id BIGINT NOT NULL AUTO_INCREMENT,
-  uuid VARCHAR(36) NOT NULL,
   start_time TIME NOT NULL,
   finish_time TIME NOT NULL,
   task_type VARCHAR(36) NOT NULL check (task_type in ('THREAD', 'WEAVE', 'LASER_DONUT', 'HOBBY')),
   task_id VARCHAR(36),
-  PRIMARY KEY (id),
-  UNIQUE KEY (uuid)
+  PRIMARY KEY (id)
 ) ENGINE=InnoDB;
 
 create table routine_time_block (
@@ -39,7 +37,6 @@ create table routine_time_block (
 
 create table scheduled_time_block (
   id BIGINT NOT NULL AUTO_INCREMENT,
-  uuid VARCHAR(36) NOT NULL,
   date DATE NOT NULL,
   start_time TIME NOT NULL,
   finish_time TIME NOT NULL,
@@ -47,6 +44,5 @@ create table scheduled_time_block (
   task_id VARCHAR(36) NOT NULL,
   temporal_status VARCHAR(36) NOT NULL check (temporal_status in ('PREVIOUSLY', 'RIGHT_NOW', 'UPCOMING')),
   is_done TINYINT(1) NOT NULL DEFAULT 0,
-  PRIMARY KEY (id),
-  UNIQUE KEY (uuid)
+  PRIMARY KEY (id)
 ) ENGINE=InnoDB;
