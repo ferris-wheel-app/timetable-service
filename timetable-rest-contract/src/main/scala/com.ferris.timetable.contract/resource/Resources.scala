@@ -80,14 +80,12 @@ object Resources {
     }
 
     case class ConcreteBlockView (
-      uuid: UUID,
       start: LocalDateTime,
       finish: LocalDateTime,
       task: Option[UUID]
     ) extends TimeBlockView
 
     case class BufferBlockView (
-      uuid: UUID,
       start: LocalDateTime,
       finish: LocalDateTime,
       firstTask: Option[UUID],
@@ -95,7 +93,6 @@ object Resources {
     ) extends TimeBlockView
 
     case class TimetableTemplateView (
-      uuid: UUID,
       blocks: Seq[TimeBlockView]
     )
 

@@ -18,7 +18,6 @@ object ModelToView {
   implicit class ConcreteTimeBlockConversion(timeBlock: ConcreteBlock) {
     def toView: ConcreteBlockView = {
       ConcreteBlockView(
-        uuid = timeBlock.uuid,
         start = timeBlock.start,
         finish = timeBlock.finish,
         task = timeBlock.task
@@ -29,7 +28,6 @@ object ModelToView {
   implicit class BufferTimeBlockConversion(timeBlock: BufferBlock) {
     def toView: BufferBlockView = {
       BufferBlockView(
-        uuid = timeBlock.uuid,
         start = timeBlock.start,
         finish = timeBlock.finish,
         firstTask = timeBlock.firstTask,
@@ -48,7 +46,6 @@ object ModelToView {
   implicit class TimetableTemplateConversion(timetableTemplate: TimetableTemplate) {
     def toView: TimetableTemplateView = {
       TimetableTemplateView(
-        uuid = timetableTemplate.uuid,
         blocks = timetableTemplate.blocks.map(_.toView)
       )
     }

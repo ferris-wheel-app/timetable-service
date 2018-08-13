@@ -17,14 +17,12 @@ object Model {
   }
 
   case class ConcreteBlock (
-    uuid: UUID,
     start: LocalDateTime,
     finish: LocalDateTime,
     task: Option[UUID]
   ) extends TimeBlock
 
   case class BufferBlock (
-    uuid: UUID,
     start: LocalDateTime,
     finish: LocalDateTime,
     firstTask: Option[UUID],
@@ -32,7 +30,6 @@ object Model {
   ) extends TimeBlock
 
   case class TimetableTemplate (
-    uuid: UUID,
     blocks: Seq[TimeBlock]
   )
 
