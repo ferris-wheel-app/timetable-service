@@ -61,25 +61,69 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
     }
 
     override def createRoutine(routine: CreateRoutine): DBIO[Routine] = {
-      def insertTemplate(template: CreateTimetableTemplate, day: DayOfTheWeek): DBIO[TimetableTemplate] = {
+      def insertRoutine() = {
+        (RoutineTable returning RoutineTable.map(_.id)) into ((routine, id) => routine.copy(id = id)) += RoutineRow(
+          id = 0L,
+          uuid = UUID.randomUUID,
+          name = routine.name,
+          isCurrent = false
+        )
+      }
+
+      def insertTemplate(template: CreateTimetableTemplate, day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
         val timeBlockRows = template.blocks.map { block =>
           TimeBlockRow(
             id = 0L,
             startTime = java.sql.Time.valueOf(block.start),
             finishTime = java.sql.Time.valueOf(block.finish),
-            taskType = block
+            taskType = block.task.`type`.dbValue,
+            taskId = block.task.uuid
           )
         }
+        (TimeBlockTable returning TimeBlockTable.map(_.id)) into ((timeBlock, id) => timeBlock.copy(id = id)) ++= timeBlockRows
       }
 
-      val routineRow = RoutineRow(
-        id = 0L,
-        uuid = UUID.randomUUID,
-        name = routine.name,
-        isCurrent = false
-      )
-      val insertRoutine = (RoutineTable returning RoutineTable.map(_.id)) into ((routine, id) => routine.copy(id = id)) += routineRow
-      val
+      def linkRoutineToTemplate(routineId: Long, timeBlocks: Seq[TimeBlockRow], day: DayOfTheWeek): DBIO[Seq[RoutineTimeBlockRow]] = {
+        DBIO.sequence(timeBlocks.map { timeBlock =>
+          (RoutineTimeBlockTable returning RoutineTimeBlockTable.map(_.id)) into ((link, id) => link.copy(id = id)) += RoutineTimeBlockRow(
+            id = 0L,
+            routineId = routineId,
+            timeBlockId = timeBlock.id,
+            dayOfWeek = day.dbValue
+          )
+        })
+      }
+
+      def createWeeklyRoutine(routineId: Long, template: CreateTimetableTemplate, day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
+        for {
+          timeBlocks <- insertTemplate(template, day)
+          _ <- linkRoutineToTemplate(routineId, timeBlocks, day)
+        } yield timeBlocks
+      }
+
+      for {
+        routineRow <- insertRoutine()
+        monday <- createWeeklyRoutine(routineRow.id, routine.monday, DayOfTheWeek.Monday)
+        tuesday <- createWeeklyRoutine(routineRow.id, routine.tuesday, DayOfTheWeek.Tuesday)
+        wednesday <- createWeeklyRoutine(routineRow.id, routine.wednesday, DayOfTheWeek.Wednesday)
+        thursday <- createWeeklyRoutine(routineRow.id, routine.thursday, DayOfTheWeek.Thursday)
+        friday <- createWeeklyRoutine(routineRow.id, routine.friday, DayOfTheWeek.Friday)
+        saturday <- createWeeklyRoutine(routineRow.id, routine.saturday, DayOfTheWeek.Saturday)
+        sunday <- createWeeklyRoutine(routineRow.id, routine.sunday, DayOfTheWeek.Sunday)
+      } yield {
+        Routine(
+          uuid = UUID.fromString(routineRow.uuid),
+          name = routineRow.name,
+          monday = monday.asTimetableTemplate,
+          tuesday = tuesday.asTimetableTemplate,
+          wednesday = wednesday.asTimetableTemplate,
+          thursday = thursday.asTimetableTemplate,
+          friday = friday.asTimetableTemplate,
+          saturday = saturday.asTimetableTemplate,
+          sunday = sunday.asTimetableTemplate,
+          isCurrent = routineRow.isCurrent
+        )
+      }
     }
 
     // Update endpoints

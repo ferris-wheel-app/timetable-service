@@ -17,16 +17,21 @@ object Resources {
       content: Option[String]
     )
 
+    case class TaskRecord (
+      uuid: Option[UUID],
+      `type`: String
+    )
+
     case class TimeBlockCreation (
       start: LocalTime,
       finish: LocalTime,
-      task: Option[UUID]
+      task: TaskRecord
     )
 
     case class TimeBlockUpdate (
       start: Option[LocalTime],
       finish: Option[LocalTime],
-      task: Option[UUID]
+      task: Option[TaskRecord]
     )
 
     case class TimetableTemplateCreation (
@@ -74,6 +79,11 @@ object Resources {
       content: String
     )
 
+    case class TaskView (
+      `type`: String,
+      summary: Option[String]
+    )
+
     sealed trait TimeBlockView {
       def start: LocalTime
       def finish: LocalTime
@@ -82,14 +92,14 @@ object Resources {
     case class ConcreteBlockView (
       start: LocalTime,
       finish: LocalTime,
-      task: Option[UUID]
+      task: TaskView
     ) extends TimeBlockView
 
     case class BufferBlockView (
       start: LocalTime,
       finish: LocalTime,
-      firstTask: Option[UUID],
-      secondTask: Option[UUID]
+      firstTask: TaskView,
+      secondTask: TaskView
     ) extends TimeBlockView
 
     case class TimetableTemplateView (

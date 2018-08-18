@@ -20,10 +20,20 @@ class DomainConversions(val tables: Tables) {
     )
   }
 
-  implicit class RoutineBuilder(val row: tables.RoutineRow) {
-    def asRoutine: Routine = Routine(
-      uuid = UUID.fromString(row.uuid),
-      name =
+  implicit class TimeBlockBuilder(val row: tables.TimeBlockRow) {
+    def asTimeBlock: TimeBlock = ConcreteBlock(
+      start = row.startTime.toLocalTime,
+      finish = row.finishTime.toLocalTime,
+      task = Task(
+        uuid = row.taskId.map(UUID.fromString),
+        `type` = TaskTypes.withName(row.taskType)
+      )
+    )
+  }
+
+  implicit class TimetableTemplateBuilder(val rows: Seq[tables.TimeBlockRow]) {
+    def asTimetableTemplate: TimetableTemplate = TimetableTemplate(
+      blocks = rows.map(_.asTimeBlock)
     )
   }
 

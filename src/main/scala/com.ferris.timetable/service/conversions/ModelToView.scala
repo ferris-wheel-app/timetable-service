@@ -1,5 +1,6 @@
 package com.ferris.timetable.service.conversions
 
+import TypeResolvers._
 import com.ferris.timetable.contract.resource.Resources.Out._
 import com.ferris.timetable.model.Model._
 
@@ -20,7 +21,10 @@ object ModelToView {
       ConcreteBlockView(
         start = timeBlock.start,
         finish = timeBlock.finish,
-        task = timeBlock.task
+        task = TaskView(
+          `type` = TaskType.toString(timeBlock.task.`type`),
+          summary = None
+        )
       )
     }
   }
@@ -30,8 +34,14 @@ object ModelToView {
       BufferBlockView(
         start = timeBlock.start,
         finish = timeBlock.finish,
-        firstTask = timeBlock.firstTask,
-        secondTask = timeBlock.secondTask
+        firstTask = TaskView(
+          `type` = TaskType.toString(timeBlock.firstTask.`type`),
+          summary = None
+        ),
+        secondTask = TaskView(
+          `type` = TaskType.toString(timeBlock.secondTask.`type`),
+          summary = None
+        )
       )
     }
   }

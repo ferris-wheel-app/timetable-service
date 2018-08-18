@@ -11,6 +11,11 @@ object Model {
     content: String
   )
 
+  case class Task (
+    uuid: Option[UUID],
+    `type`: TaskTypes.TaskType
+  )
+
   sealed trait TimeBlock {
     def start: LocalTime
     def finish: LocalTime
@@ -19,14 +24,14 @@ object Model {
   case class ConcreteBlock (
     start: LocalTime,
     finish: LocalTime,
-    task: Option[UUID]
+    task: Task
   ) extends TimeBlock
 
   case class BufferBlock (
     start: LocalTime,
     finish: LocalTime,
-    firstTask: Option[UUID],
-    secondTask: Option[UUID]
+    firstTask: Task,
+    secondTask: Task
   ) extends TimeBlock
 
   case class TimetableTemplate (
@@ -42,7 +47,8 @@ object Model {
     thursday: TimetableTemplate,
     friday: TimetableTemplate,
     saturday: TimetableTemplate,
-    sunday: TimetableTemplate
+    sunday: TimetableTemplate,
+    isCurrent: Boolean
   )
 
   case class Timetable (
@@ -94,6 +100,34 @@ object Model {
 
     case object Sunday extends DayOfTheWeek {
       override val dbValue = "SUNDAY"
+    }
+  }
+
+  object TaskTypes {
+
+    sealed trait TaskType extends TypeEnum
+
+    def withName(name: String): TaskType = name match {
+      case Thread.dbValue => Thread
+      case Weave.dbValue => Weave
+      case LaserDonut.dbValue => LaserDonut
+      case Hobby.dbValue => Hobby
+    }
+
+    case object Thread extends TaskType {
+      override val dbValue = "THREAD"
+    }
+
+    case object Weave extends TaskType {
+      override val dbValue = "WEAVE"
+    }
+
+    case object LaserDonut extends TaskType {
+      override val dbValue = "LASER_DONUT"
+    }
+
+    case object Hobby extends TaskType {
+      override val dbValue = "HOBBY"
     }
   }
 }

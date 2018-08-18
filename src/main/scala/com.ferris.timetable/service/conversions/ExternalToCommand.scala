@@ -2,6 +2,7 @@ package com.ferris.timetable.service.conversions
 
 import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.contract.resource.Resources.In._
+import com.ferris.timetable.model.Model.{Task, TaskTypes}
 
 object ExternalToCommand {
 
@@ -23,11 +24,18 @@ object ExternalToCommand {
     )
   }
 
+  implicit class TaskRecordConversion(taskRecord: TaskRecord) extends CommandConversion[Task] {
+    override def toCommand = Task(
+      uuid = taskRecord.uuid,
+      `type` = TaskTypes.withName(taskRecord.`type`)
+    )
+  }
+
   implicit class TimeBlockCreationConversion(timeBlock: TimeBlockCreation) extends CommandConversion[CreateTimeBlock] {
     override def toCommand = CreateTimeBlock(
       start = timeBlock.start,
       finish = timeBlock.finish,
-      task = timeBlock.task
+      task = timeBlock.task.toCommand
     )
   }
 
@@ -35,7 +43,7 @@ object ExternalToCommand {
     override def toCommand = UpdateTimeBlock(
       start = timeBlock.start,
       finish = timeBlock.finish,
-      task = timeBlock.task
+      task = timeBlock.task.map(_.toCommand)
     )
   }
 

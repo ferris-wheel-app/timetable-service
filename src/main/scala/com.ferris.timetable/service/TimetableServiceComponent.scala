@@ -41,8 +41,6 @@ trait TimetableServiceComponent {
 trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
   this: TimetableRepositoryComponent with DatabaseComponent =>
 
-  import tables.profile.api._
-
   override val timetableService = new DefaultTimetableService
 
   class DefaultTimetableService extends TimetableService {
