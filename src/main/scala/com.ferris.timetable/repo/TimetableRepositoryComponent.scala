@@ -101,11 +101,14 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
 
     override def updateRoutine(uuid: UUID, update: UpdateRoutine) = {
       val updateQuery = routineByUuid(uuid).map(routine => routine.name)
-      for {
-        routine: RoutineRow <- OptionT(routineByUuid(uuid).result.headOption)
-        _ <- updateQuery.update(update.name.getOrElse(routine))
-      } yield {
+      val existingRoutine = routineByUuid(uuid).result.headOption
+      existingRoutine.flatMap { routineRow =>
+        for {
+          row <- OptionT.fromOption[DBIO](routineRow)
+          _ <- updateQuery.update(update.name.getOrElse(row.name))
+        } yield {
 
+        }
       }
     }
 
