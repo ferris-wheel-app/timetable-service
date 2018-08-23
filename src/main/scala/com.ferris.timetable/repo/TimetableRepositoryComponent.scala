@@ -2,6 +2,7 @@ package com.ferris.timetable.repo
 
 import java.util.UUID
 
+import cats.data.OptionT
 import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.db.DatabaseComponent
 import com.ferris.timetable.db.conversions.DomainConversions
@@ -130,7 +131,14 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
 
     override def getRoutines = ???
 
-    override def getRoutine(uuid: UUID) = ???
+    override def getRoutine(uuid: UUID) = {
+      for {
+        routine <- OptionT(routineByUuid(uuid).result.headOption)
+        monday <- getWeeklyRoutine(routine.)
+      } yield {
+
+      }
+    }
 
     override def currentTimetable = ???
 
@@ -158,12 +166,18 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       }
     }
 
-    private def deleteWeeklyRoutine(routineId: Long, day: DayOfTheWeek): DBIO[Boolean] = {
-      val linkQuery = RoutineTimeBlockTable.filter(row => row.routineId === routineId && row.dayOfWeek === day.dbValue)
+    private def getWeeklyRoutine(routineId: Long, day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
       for {
-        timeBlockId <- linkQuery.map(_.timeBlockId).result.headOption
-        linkDeleted <- linkQuery.delete
-        routineDeleted <- TimeBlockTable.filter(_.id === timeBlockId).delete
+        timeBlockIds <- routineTemplateLinks(routineId, day).map(_.timeBlockId).result
+        timeBlocks <- timeBlocksById(timeBlockIds)
+      } yield timeBlocks
+    }
+
+    private def deleteWeeklyRoutine(routineId: Long, day: DayOfTheWeek): DBIO[Boolean] = {
+      for {
+        timeBlockIds <- routineTemplateLinks(routineId, day).map(_.timeBlockId).result
+        linkDeleted <- routineTemplateLinks(routineId, day).delete
+        routineDeleted <- timeBlocksById(timeBlockIds).delete
       } yield (linkDeleted :: routineDeleted :: Nil).forall(_ > 0)
     }
 
@@ -207,6 +221,14 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
 
     private def routineByUuid(uuid: UUID) = {
       RoutineTable.filter(_.uuid === uuid.toString)
+    }
+
+    private def routineTemplateLinks(routineId: Long, day: DayOfTheWeek) = {
+      RoutineTimeBlockTable.filter(row => row.routineId === routineId && row.dayOfWeek === day.dbValue)
+    }
+
+    private def timeBlocksById(ids: Seq[Long]) = {
+      TimeBlockTable.filter(_.id inSet ids)
     }
   }
 }
