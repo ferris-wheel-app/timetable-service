@@ -2,12 +2,11 @@ package com.ferris.timetable.repo
 
 import java.util.UUID
 
-import cats.data.OptionT
 import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.db.DatabaseComponent
 import com.ferris.timetable.db.conversions.DomainConversions
 import com.ferris.timetable.model.Model._
-import com.ferris.timetable.service.exceptions.Exceptions.MessageNotFoundException
+import com.ferris.timetable.service.exceptions.Exceptions.{MessageNotFoundException, RoutineNotFoundException}
 
 import scala.concurrent.ExecutionContext
 
@@ -22,7 +21,7 @@ trait TimetableRepositoryComponent {
     def createRoutine(routine: CreateRoutine): DBIO[Routine]
 
     def updateMessage(uuid: UUID, update: UpdateMessage): DBIO[Message]
-    def updateRoutine(uuid: UUID, update: UpdateRoutine): DBIO[Routine]
+    def updateRoutine(uuid: UUID, update: UpdateRoutine): DBIO[Boolean]
     def startRoutine(uuid: UUID): DBIO[Boolean]
 
     def getMessages: DBIO[Seq[Message]]
@@ -99,16 +98,22 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       }.transactionally
     }
 
-    override def updateRoutine(uuid: UUID, update: UpdateRoutine) = {
-      val updateQuery = routineByUuid(uuid).map(routine => routine.name)
+    override def updateRoutine(uuid: UUID, update: UpdateRoutine): DBIO[Boolean] = {
+      val query = routineByUuid(uuid).map(routine => routine.name)
       val existingRoutine = routineByUuid(uuid).result.headOption
       existingRoutine.flatMap { routineRow =>
-        for {
-          row <- OptionT.fromOption[DBIO](routineRow)
-          _ <- updateQuery.update(update.name.getOrElse(row.name))
-        } yield {
-
-        }
+        routineRow map { old =>
+          (for {
+            name <- query.update(update.name.getOrElse(old.name)).map(_ > 0)
+            monday <- updateWeeklyRoutine(old.id, update.monday, DayOfTheWeek.Monday)
+            tuesday <- updateWeeklyRoutine(old.id, update.tuesday, DayOfTheWeek.Tuesday)
+            wednesday <- updateWeeklyRoutine(old.id, update.wednesday, DayOfTheWeek.Wednesday)
+            thursday <- updateWeeklyRoutine(old.id, update.thursday, DayOfTheWeek.Thursday)
+            friday <- updateWeeklyRoutine(old.id, update.friday, DayOfTheWeek.Friday)
+            saturday <- updateWeeklyRoutine(old.id, update.saturday, DayOfTheWeek.Saturday)
+            sunday <- updateWeeklyRoutine(old.id, update.sunday, DayOfTheWeek.Sunday)
+          } yield name || monday || tuesday || wednesday || thursday || friday || saturday || sunday).transactionally
+        } getOrElse DBIO.failed(RoutineNotFoundException())
       }
     }
 
@@ -136,6 +141,32 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
 
     override def deleteRoutine(uuid: UUID) = ???
 
+    private def createWeeklyRoutine(routineId: Long, template: CreateTimetableTemplate, day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
+      for {
+        timeBlocks <- insertTimeBlocks(template.blocks, day)
+        _ <- linkRoutineToTemplate(routineId, timeBlocks, day)
+      } yield timeBlocks
+    }
+
+    private def updateWeeklyRoutine(routineId: Long, template: Option[CreateTimetableTemplate], day: DayOfTheWeek): DBIO[Boolean] = {
+      template match {
+        case None => DBIO.successful(false)
+        case Some(weeklyTemplate) => for {
+          _ <- deleteWeeklyRoutine(routineId, day)
+          newTimeBlocks <- createWeeklyRoutine(routineId, weeklyTemplate, day)
+        } yield newTimeBlocks.nonEmpty
+      }
+    }
+
+    private def deleteWeeklyRoutine(routineId: Long, day: DayOfTheWeek): DBIO[Boolean] = {
+      val linkQuery = RoutineTimeBlockTable.filter(row => row.routineId === routineId && row.dayOfWeek === day.dbValue)
+      for {
+        timeBlockId <- linkQuery.map(_.timeBlockId).result.headOption
+        linkDeleted <- linkQuery.delete
+        routineDeleted <- TimeBlockTable.filter(_.id === timeBlockId).delete
+      } yield (linkDeleted :: routineDeleted :: Nil).forall(_ > 0)
+    }
+
     private def insertRoutine(routine: CreateRoutine) = {
       (RoutineTable returning RoutineTable.map(_.id)) into ((routine, id) => routine.copy(id = id)) += RoutineRow(
         id = 0L,
@@ -145,8 +176,8 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       )
     }
 
-    private def insertTemplate(template: CreateTimetableTemplate, day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
-      val timeBlockRows = template.blocks.map { block =>
+    private def insertTimeBlocks(timeBlocks: Seq[CreateTimeBlock], day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
+      val timeBlockRows = timeBlocks.map { block =>
         TimeBlockRow(
           id = 0L,
           startTime = java.sql.Time.valueOf(block.start),
@@ -167,13 +198,6 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
           dayOfWeek = day.dbValue
         )
       })
-    }
-
-    private def createWeeklyRoutine(routineId: Long, template: CreateTimetableTemplate, day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
-      for {
-        timeBlocks <- insertTemplate(template, day)
-        _ <- linkRoutineToTemplate(routineId, timeBlocks, day)
-      } yield timeBlocks
     }
 
     // Queries

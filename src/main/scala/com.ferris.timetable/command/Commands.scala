@@ -17,18 +17,8 @@ object Commands {
     task: Task
   )
 
-  case class UpdateTimeBlock (
-    start: Option[LocalTime],
-    finish: Option[LocalTime],
-    task: Option[Task]
-  )
-
   case class CreateTimetableTemplate (
     blocks: Seq[CreateTimeBlock]
-  )
-
-  case class UpdateTimetableTemplate (
-    blocks: Option[Seq[UpdateTimeBlock]]
   )
 
   case class CreateRoutine (
@@ -44,12 +34,12 @@ object Commands {
 
   case class UpdateRoutine (
     name: Option[String],
-    monday: Option[UpdateTimetableTemplate],
-    tuesday: Option[UpdateTimetableTemplate],
-    wednesday: Option[UpdateTimetableTemplate],
-    thursday: Option[UpdateTimetableTemplate],
-    friday: Option[UpdateTimetableTemplate],
-    saturday: Option[UpdateTimetableTemplate],
-    sunday: Option[UpdateTimetableTemplate]
+    monday: Option[CreateTimetableTemplate],
+    tuesday: Option[CreateTimetableTemplate],
+    wednesday: Option[CreateTimetableTemplate],
+    thursday: Option[CreateTimetableTemplate],
+    friday: Option[CreateTimetableTemplate],
+    saturday: Option[CreateTimetableTemplate],
+    sunday: Option[CreateTimetableTemplate]
   )
 }

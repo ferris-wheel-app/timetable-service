@@ -39,23 +39,9 @@ object ExternalToCommand {
     )
   }
 
-  implicit class TimeBlockUpdateConversion(timeBlock: TimeBlockUpdate) extends CommandConversion[UpdateTimeBlock] {
-    override def toCommand = UpdateTimeBlock(
-      start = timeBlock.start,
-      finish = timeBlock.finish,
-      task = timeBlock.task.map(_.toCommand)
-    )
-  }
-
   implicit class TimetableTemplateCreationConversion(template: TimetableTemplateCreation) extends CommandConversion[CreateTimetableTemplate] {
     override def toCommand = CreateTimetableTemplate(
       blocks = template.blocks.map(_.toCommand)
-    )
-  }
-
-  implicit class TimetableTemplateUpdateConversion(template: TimetableTemplateUpdate) extends CommandConversion[UpdateTimetableTemplate] {
-    override def toCommand = UpdateTimetableTemplate(
-      blocks = template.blocks.map(_.map(_.toCommand))
     )
   }
 

@@ -57,13 +57,13 @@ object Resources {
 
     case class RoutineUpdate (
       name: Option[String],
-      monday: Option[TimetableTemplateUpdate],
-      tuesday: Option[TimetableTemplateUpdate],
-      wednesday: Option[TimetableTemplateUpdate],
-      thursday: Option[TimetableTemplateUpdate],
-      friday: Option[TimetableTemplateUpdate],
-      saturday: Option[TimetableTemplateUpdate],
-      sunday: Option[TimetableTemplateUpdate]
+      monday: Option[TimetableTemplateCreation],
+      tuesday: Option[TimetableTemplateCreation],
+      wednesday: Option[TimetableTemplateCreation],
+      thursday: Option[TimetableTemplateCreation],
+      friday: Option[TimetableTemplateCreation],
+      saturday: Option[TimetableTemplateCreation],
+      sunday: Option[TimetableTemplateCreation]
     )
 
 //    case class TimetableUpdate (
