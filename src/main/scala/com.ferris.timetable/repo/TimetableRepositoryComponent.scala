@@ -2,12 +2,13 @@ package com.ferris.timetable.repo
 
 import java.util.UUID
 
-import cats.data.OptionT
+import cats.data._
 import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.db.DatabaseComponent
 import com.ferris.timetable.db.conversions.DomainConversions
 import com.ferris.timetable.model.Model._
 import com.ferris.timetable.service.exceptions.Exceptions.{MessageNotFoundException, RoutineNotFoundException}
+import com.rms.miu.slickcats.DBIOInstances._
 
 import scala.concurrent.ExecutionContext
 
@@ -65,13 +66,13 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
     override def createRoutine(routine: CreateRoutine): DBIO[Routine] = {
       (for {
         routineRow <- insertRoutine(routine)
-        monday <- createWeeklyRoutine(routineRow.id, routine.monday, DayOfTheWeek.Monday)
-        tuesday <- createWeeklyRoutine(routineRow.id, routine.tuesday, DayOfTheWeek.Tuesday)
-        wednesday <- createWeeklyRoutine(routineRow.id, routine.wednesday, DayOfTheWeek.Wednesday)
-        thursday <- createWeeklyRoutine(routineRow.id, routine.thursday, DayOfTheWeek.Thursday)
-        friday <- createWeeklyRoutine(routineRow.id, routine.friday, DayOfTheWeek.Friday)
-        saturday <- createWeeklyRoutine(routineRow.id, routine.saturday, DayOfTheWeek.Saturday)
-        sunday <- createWeeklyRoutine(routineRow.id, routine.sunday, DayOfTheWeek.Sunday)
+        monday <- createWeeklyTemplate(routineRow.id, routine.monday, DayOfTheWeek.Monday)
+        tuesday <- createWeeklyTemplate(routineRow.id, routine.tuesday, DayOfTheWeek.Tuesday)
+        wednesday <- createWeeklyTemplate(routineRow.id, routine.wednesday, DayOfTheWeek.Wednesday)
+        thursday <- createWeeklyTemplate(routineRow.id, routine.thursday, DayOfTheWeek.Thursday)
+        friday <- createWeeklyTemplate(routineRow.id, routine.friday, DayOfTheWeek.Friday)
+        saturday <- createWeeklyTemplate(routineRow.id, routine.saturday, DayOfTheWeek.Saturday)
+        sunday <- createWeeklyTemplate(routineRow.id, routine.sunday, DayOfTheWeek.Sunday)
       } yield {
         Routine(
           uuid = UUID.fromString(routineRow.uuid),
@@ -106,19 +107,24 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
         routineRow map { old =>
           (for {
             name <- query.update(update.name.getOrElse(old.name)).map(_ > 0)
-            monday <- updateWeeklyRoutine(old.id, update.monday, DayOfTheWeek.Monday)
-            tuesday <- updateWeeklyRoutine(old.id, update.tuesday, DayOfTheWeek.Tuesday)
-            wednesday <- updateWeeklyRoutine(old.id, update.wednesday, DayOfTheWeek.Wednesday)
-            thursday <- updateWeeklyRoutine(old.id, update.thursday, DayOfTheWeek.Thursday)
-            friday <- updateWeeklyRoutine(old.id, update.friday, DayOfTheWeek.Friday)
-            saturday <- updateWeeklyRoutine(old.id, update.saturday, DayOfTheWeek.Saturday)
-            sunday <- updateWeeklyRoutine(old.id, update.sunday, DayOfTheWeek.Sunday)
+            monday <- updateWeeklyTemplate(old.id, update.monday, DayOfTheWeek.Monday)
+            tuesday <- updateWeeklyTemplate(old.id, update.tuesday, DayOfTheWeek.Tuesday)
+            wednesday <- updateWeeklyTemplate(old.id, update.wednesday, DayOfTheWeek.Wednesday)
+            thursday <- updateWeeklyTemplate(old.id, update.thursday, DayOfTheWeek.Thursday)
+            friday <- updateWeeklyTemplate(old.id, update.friday, DayOfTheWeek.Friday)
+            saturday <- updateWeeklyTemplate(old.id, update.saturday, DayOfTheWeek.Saturday)
+            sunday <- updateWeeklyTemplate(old.id, update.sunday, DayOfTheWeek.Sunday)
           } yield name || monday || tuesday || wednesday || thursday || friday || saturday || sunday).transactionally
         } getOrElse DBIO.failed(RoutineNotFoundException())
-      }
+      }.transactionally
     }
 
-    override def startRoutine(uuid: UUID) = ???
+    override def startRoutine(uuid: UUID): DBIO[Boolean] = {
+      for {
+        otherRoutines <- RoutineTable.filterNot(_.uuid === uuid.toString).map(_.isCurrent).update(false)
+        thisRoutine <- routineByUuid(uuid).map(_.isCurrent).update(true)
+      } yield (otherRoutines :: thisRoutine :: Nil).forall(_ > 0)
+    }
 
     // Get endpoints
     override def getMessages: DBIO[Seq[Message]] = {
@@ -129,15 +135,35 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       messageByUuid(uuid).result.headOption.map(_.map(_.asMessage))
     }
 
-    override def getRoutines = ???
+    override def getRoutines: DBIO[Seq[Routine]] = {
+      (for {
+        routineRows <- RoutineTable.result
+        routines <- DBIO.sequence(routineRows.map(row => getRoutine(UUID.fromString(row.uuid))))
+      } yield routines.flatten).transactionally
+    }
 
-    override def getRoutine(uuid: UUID) = {
-      for {
-        routine <- OptionT(routineByUuid(uuid).result.headOption)
-        monday <- getWeeklyRoutine(routine.)
-      } yield {
-
-      }
+    override def getRoutine(uuid: UUID): DBIO[Option[Routine]] = {
+      (for {
+        routine <- OptionT[DBIO, RoutineRow](routineByUuid(uuid).result.headOption)
+        monday <- OptionT.liftF(getWeeklyTemplate(routine.id, DayOfTheWeek.Monday))
+        tuesday <- OptionT.liftF(getWeeklyTemplate(routine.id, DayOfTheWeek.Tuesday))
+        wednesday <- OptionT.liftF(getWeeklyTemplate(routine.id, DayOfTheWeek.Wednesday))
+        thursday <- OptionT.liftF(getWeeklyTemplate(routine.id, DayOfTheWeek.Thursday))
+        friday <- OptionT.liftF(getWeeklyTemplate(routine.id, DayOfTheWeek.Friday))
+        saturday <- OptionT.liftF(getWeeklyTemplate(routine.id, DayOfTheWeek.Saturday))
+        sunday <- OptionT.liftF(getWeeklyTemplate(routine.id, DayOfTheWeek.Sunday))
+      } yield Routine(
+        uuid = UUID.fromString(routine.uuid),
+        name = routine.name,
+        monday = monday.asTimetableTemplate,
+        tuesday = tuesday.asTimetableTemplate,
+        wednesday = wednesday.asTimetableTemplate,
+        thursday = thursday.asTimetableTemplate,
+        friday = friday.asTimetableTemplate,
+        saturday = saturday.asTimetableTemplate,
+        sunday = sunday.asTimetableTemplate,
+        isCurrent = routine.isCurrent
+      )).value.transactionally
     }
 
     override def currentTimetable = ???
@@ -147,33 +173,48 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       messageByUuid(uuid).delete.map(_ > 0)
     }
 
-    override def deleteRoutine(uuid: UUID) = ???
+    override def deleteRoutine(uuid: UUID): DBIO[Boolean] = {
+      def deleteActualRoutine(routineId: Long): DBIO[Boolean] = {
+        RoutineTable.filter(_.id === routineId).delete.map(_ > 0)
+      }
+      (for {
+        routine <- OptionT[DBIO, RoutineRow](routineByUuid(uuid).result.headOption)
+        monday <- OptionT.liftF(deleteWeeklyTemplate(routine.id, DayOfTheWeek.Monday))
+        tuesday <- OptionT.liftF(deleteWeeklyTemplate(routine.id, DayOfTheWeek.Tuesday))
+        wednesday <- OptionT.liftF(deleteWeeklyTemplate(routine.id, DayOfTheWeek.Wednesday))
+        thursday <- OptionT.liftF(deleteWeeklyTemplate(routine.id, DayOfTheWeek.Thursday))
+        friday <- OptionT.liftF(deleteWeeklyTemplate(routine.id, DayOfTheWeek.Friday))
+        saturday <- OptionT.liftF(deleteWeeklyTemplate(routine.id, DayOfTheWeek.Saturday))
+        sunday <- OptionT.liftF(deleteWeeklyTemplate(routine.id, DayOfTheWeek.Sunday))
+        routineDeleted <- OptionT.liftF(deleteActualRoutine(routine.id))
+      } yield monday && tuesday && wednesday && thursday && friday && saturday && sunday && routineDeleted).value.map(_.getOrElse(true))
+    }
 
-    private def createWeeklyRoutine(routineId: Long, template: CreateTimetableTemplate, day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
+    private def createWeeklyTemplate(routineId: Long, template: CreateTimetableTemplate, day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
       for {
         timeBlocks <- insertTimeBlocks(template.blocks, day)
         _ <- linkRoutineToTemplate(routineId, timeBlocks, day)
       } yield timeBlocks
     }
 
-    private def updateWeeklyRoutine(routineId: Long, template: Option[CreateTimetableTemplate], day: DayOfTheWeek): DBIO[Boolean] = {
+    private def updateWeeklyTemplate(routineId: Long, template: Option[CreateTimetableTemplate], day: DayOfTheWeek): DBIO[Boolean] = {
       template match {
         case None => DBIO.successful(false)
         case Some(weeklyTemplate) => for {
-          _ <- deleteWeeklyRoutine(routineId, day)
-          newTimeBlocks <- createWeeklyRoutine(routineId, weeklyTemplate, day)
+          _ <- deleteWeeklyTemplate(routineId, day)
+          newTimeBlocks <- createWeeklyTemplate(routineId, weeklyTemplate, day)
         } yield newTimeBlocks.nonEmpty
       }
     }
 
-    private def getWeeklyRoutine(routineId: Long, day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
+    private def getWeeklyTemplate(routineId: Long, day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
       for {
         timeBlockIds <- routineTemplateLinks(routineId, day).map(_.timeBlockId).result
-        timeBlocks <- timeBlocksById(timeBlockIds)
+        timeBlocks <- timeBlocksById(timeBlockIds).result
       } yield timeBlocks
     }
 
-    private def deleteWeeklyRoutine(routineId: Long, day: DayOfTheWeek): DBIO[Boolean] = {
+    private def deleteWeeklyTemplate(routineId: Long, day: DayOfTheWeek): DBIO[Boolean] = {
       for {
         timeBlockIds <- routineTemplateLinks(routineId, day).map(_.timeBlockId).result
         linkDeleted <- routineTemplateLinks(routineId, day).delete
