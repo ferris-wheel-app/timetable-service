@@ -21,7 +21,7 @@ class DomainConversions(val tables: Tables) {
   }
 
   implicit class TimeBlockBuilder(val row: tables.TimeBlockRow) {
-    def asTimeBlock: TimeBlock = ConcreteBlock(
+    def asTimeBlock: TimeBlockTemplate = TimeBlockTemplate(
       start = row.startTime.toLocalTime,
       finish = row.finishTime.toLocalTime,
       task = Task(

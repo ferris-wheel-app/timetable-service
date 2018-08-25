@@ -16,8 +16,20 @@ object Model {
     `type`: TaskTypes.TaskType
   )
 
-  case class ScheduledTask (
+  case class TimeBlockTemplate (
+    start: LocalTime,
+    finish: LocalTime,
+    task: Task
+  )
 
+  case class TimetableTemplate (
+    blocks: Seq[TimeBlockTemplate]
+  )
+
+  case class ScheduledTask (
+    uuid: Option[UUID],
+    `type`: TaskTypes.TaskType,
+    temporalStatus: TemporalStatuses.TemporalStatus
   )
 
   sealed trait TimeBlock {
@@ -28,19 +40,15 @@ object Model {
   case class ConcreteBlock (
     start: LocalTime,
     finish: LocalTime,
-    task: Task
+    task: ScheduledTask
   ) extends TimeBlock
 
   case class BufferBlock (
     start: LocalTime,
     finish: LocalTime,
     firstTask: Task,
-    secondTask: Task
+    secondTask: ScheduledTask
   ) extends TimeBlock
-
-  case class TimetableTemplate (
-    blocks: Seq[TimeBlock]
-  )
 
   case class Routine (
     uuid: UUID,
@@ -133,5 +141,16 @@ object Model {
     case object Hobby extends TaskType {
       override val dbValue = "HOBBY"
     }
+  }
+
+  object TemporalStatuses {
+
+    sealed trait TemporalStatus
+
+    case object Previously extends TemporalStatus
+
+    case object RightNow extends TemporalStatus
+
+    case object Upcoming extends TemporalStatus
   }
 }

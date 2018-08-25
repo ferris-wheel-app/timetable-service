@@ -2,7 +2,7 @@ package com.ferris.timetable.service.conversions
 
 import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.contract.resource.Resources.In._
-import com.ferris.timetable.model.Model.{Task, TaskTypes}
+import com.ferris.timetable.model.Model.TaskTypes
 
 object ExternalToCommand {
 
@@ -24,8 +24,8 @@ object ExternalToCommand {
     )
   }
 
-  implicit class TaskRecordConversion(taskRecord: TaskRecord) extends CommandConversion[Task] {
-    override def toCommand = Task(
+  implicit class TaskRecordConversion(taskRecord: TaskRecord) extends CommandConversion[CreateTask] {
+    override def toCommand = CreateTask(
       uuid = taskRecord.uuid,
       `type` = TaskTypes.withName(taskRecord.`type`)
     )

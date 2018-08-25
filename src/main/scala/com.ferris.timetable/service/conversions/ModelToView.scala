@@ -53,6 +53,13 @@ object ModelToView {
     }
   }
 
+  implicit class TimeBlockTemplateConversion(timeBlock: TimeBlockTemplate) {
+    def toView: TimeBlockView = timeBlock match {
+      case concrete: ConcreteBlock => concrete.toView
+      case buffer: BufferBlock => buffer.toView
+    }
+  }
+
   implicit class TimetableTemplateConversion(timetableTemplate: TimetableTemplate) {
     def toView: TimetableTemplateView = {
       TimetableTemplateView(
