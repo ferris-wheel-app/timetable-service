@@ -17,6 +17,12 @@ object Commands {
     task: Task
   )
 
+  case class CreateScheduledTimeBlock (
+    start: LocalTime,
+    finish: LocalTime,
+    task: Task
+  )
+
   case class CreateTimetableTemplate (
     blocks: Seq[CreateTimeBlock]
   )

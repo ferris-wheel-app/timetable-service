@@ -244,6 +244,19 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       (TimeBlockTable returning TimeBlockTable.map(_.id)) into ((timeBlock, id) => timeBlock.copy(id = id)) ++= timeBlockRows
     }
 
+    private def insertScheduledTimeBlocks(timeBlocks: Seq[ConcreteBlock]): DBIO[Seq[ScheduledTimeBlockRow]] = {
+      val timeBlockRows = timeBlocks.map { block =>
+        TimeBlockRow(
+          id = 0L,
+          startTime = java.sql.Time.valueOf(block.start),
+          finishTime = java.sql.Time.valueOf(block.finish),
+          taskType = block.task.`type`.dbValue,
+          taskId = block.task.uuid
+        )
+      }
+      (TimeBlockTable returning TimeBlockTable.map(_.id)) into ((timeBlock, id) => timeBlock.copy(id = id)) ++= timeBlockRows
+    }
+
     private def linkRoutineToTemplate(routineId: Long, timeBlocks: Seq[TimeBlockRow], day: DayOfTheWeek): DBIO[Seq[RoutineTimeBlockRow]] = {
       DBIO.sequence(timeBlocks.map { timeBlock =>
         (RoutineTimeBlockTable returning RoutineTimeBlockTable.map(_.id)) into ((link, id) => link.copy(id = id)) += RoutineTimeBlockRow(

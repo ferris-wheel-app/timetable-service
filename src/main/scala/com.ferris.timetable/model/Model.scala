@@ -16,6 +16,10 @@ object Model {
     `type`: TaskTypes.TaskType
   )
 
+  case class ScheduledTask (
+
+  )
+
   sealed trait TimeBlock {
     def start: LocalTime
     def finish: LocalTime

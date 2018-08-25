@@ -4,8 +4,9 @@ import java.util.UUID
 
 import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.db.DatabaseComponent
-import com.ferris.timetable.model.Model.{Message, Routine, Timetable, TimetableTemplate}
+import com.ferris.timetable.model.Model._
 import com.ferris.timetable.repo.TimetableRepositoryComponent
+import com.ferris.utils.TimerComponent
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,7 +35,7 @@ trait TimetableServiceComponent {
 }
 
 trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
-  this: TimetableRepositoryComponent with DatabaseComponent =>
+  this: TimetableRepositoryComponent with DatabaseComponent with TimerComponent =>
 
   override val timetableService = new DefaultTimetableService
 
@@ -75,5 +76,17 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
     }
 
     override def deleteRoutine(uuid: UUID)(implicit ex: ExecutionContext) = ???
+
+    private def today: DayOfTheWeek = {
+      timer.timestampOfNow.toLocalDateTime.getDayOfWeek match {
+        case java.time.DayOfWeek.MONDAY => DayOfTheWeek.Monday
+        case java.time.DayOfWeek.TUESDAY => DayOfTheWeek.Tuesday
+        case java.time.DayOfWeek.WEDNESDAY => DayOfTheWeek.Wednesday
+        case java.time.DayOfWeek.THURSDAY => DayOfTheWeek.Thursday
+        case java.time.DayOfWeek.FRIDAY => DayOfTheWeek.Friday
+        case java.time.DayOfWeek.SATURDAY => DayOfTheWeek.Saturday
+        case java.time.DayOfWeek.SUNDAY => DayOfTheWeek.Sunday
+      }
+    }
   }
 }
