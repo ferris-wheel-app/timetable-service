@@ -21,6 +21,7 @@ trait TimetableRepositoryComponent {
   trait TimetableRepository {
     def createMessage(creation: CreateMessage): DBIO[Message]
     def createRoutine(routine: CreateRoutine): DBIO[Routine]
+    def createTimetable(timetable: CreateTimetable): DBIO[Timetable]
 
     def updateMessage(uuid: UUID, update: UpdateMessage): DBIO[Message]
     def updateRoutine(uuid: UUID, update: UpdateRoutine): DBIO[Boolean]
@@ -88,6 +89,8 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
         )
       }).transactionally
     }
+
+    override def createTimetable(timetable: CreateTimetable) = ???
 
     // Update endpoints
     override def updateMessage(uuid: UUID, update: UpdateMessage): DBIO[Message] = {
@@ -231,27 +234,14 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       )
     }
 
-    private def insertTimeBlocks(timeBlocks: Seq[CreateTimeBlock], day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
+    private def insertTimeBlocks(timeBlocks: Seq[CreateTimeBlockTemplate], day: DayOfTheWeek): DBIO[Seq[TimeBlockRow]] = {
       val timeBlockRows = timeBlocks.map { block =>
         TimeBlockRow(
           id = 0L,
           startTime = java.sql.Time.valueOf(block.start),
           finishTime = java.sql.Time.valueOf(block.finish),
           taskType = block.task.`type`.dbValue,
-          taskId = block.task.uuid
-        )
-      }
-      (TimeBlockTable returning TimeBlockTable.map(_.id)) into ((timeBlock, id) => timeBlock.copy(id = id)) ++= timeBlockRows
-    }
-
-    private def insertScheduledTimeBlocks(timeBlocks: Seq[ConcreteBlock]): DBIO[Seq[ScheduledTimeBlockRow]] = {
-      val timeBlockRows = timeBlocks.map { block =>
-        TimeBlockRow(
-          id = 0L,
-          startTime = java.sql.Time.valueOf(block.start),
-          finishTime = java.sql.Time.valueOf(block.finish),
-          taskType = block.task.`type`.dbValue,
-          taskId = block.task.uuid
+          taskId = block.task.taskId
         )
       }
       (TimeBlockTable returning TimeBlockTable.map(_.id)) into ((timeBlock, id) => timeBlock.copy(id = id)) ++= timeBlockRows

@@ -11,44 +11,20 @@ object Model {
     content: String
   )
 
-  case class Task (
-    uuid: Option[UUID],
+  case class TaskTemplate (
+    taskId: Option[UUID],
     `type`: TaskTypes.TaskType
   )
 
   case class TimeBlockTemplate (
     start: LocalTime,
     finish: LocalTime,
-    task: Task
+    task: TaskTemplate
   )
 
   case class TimetableTemplate (
     blocks: Seq[TimeBlockTemplate]
   )
-
-  case class ScheduledTask (
-    uuid: Option[UUID],
-    `type`: TaskTypes.TaskType,
-    temporalStatus: TemporalStatuses.TemporalStatus
-  )
-
-  sealed trait TimeBlock {
-    def start: LocalTime
-    def finish: LocalTime
-  }
-
-  case class ConcreteBlock (
-    start: LocalTime,
-    finish: LocalTime,
-    task: ScheduledTask
-  ) extends TimeBlock
-
-  case class BufferBlock (
-    start: LocalTime,
-    finish: LocalTime,
-    firstTask: Task,
-    secondTask: ScheduledTask
-  ) extends TimeBlock
 
   case class Routine (
     uuid: UUID,
@@ -63,9 +39,32 @@ object Model {
     isCurrent: Boolean
   )
 
+  case class ScheduledTask (
+    taskId: UUID,
+    `type`: TaskTypes.TaskType
+  )
+
+  sealed trait ScheduledTimeBlock {
+    def start: LocalTime
+    def finish: LocalTime
+  }
+
+  case class ConcreteBlock (
+    start: LocalTime,
+    finish: LocalTime,
+    task: ScheduledTask
+  ) extends ScheduledTimeBlock
+
+  case class BufferBlock (
+    start: LocalTime,
+    finish: LocalTime,
+    firstTask: TaskTemplate,
+    secondTask: ScheduledTask
+  ) extends ScheduledTimeBlock
+
   case class Timetable (
     date: LocalDate,
-    blocks: Seq[TimeBlock]
+    blocks: Seq[ScheduledTimeBlock]
   )
 
   trait TypeEnum {
@@ -141,16 +140,5 @@ object Model {
     case object Hobby extends TaskType {
       override val dbValue = "HOBBY"
     }
-  }
-
-  object TemporalStatuses {
-
-    sealed trait TemporalStatus
-
-    case object Previously extends TemporalStatus
-
-    case object RightNow extends TemporalStatus
-
-    case object Upcoming extends TemporalStatus
   }
 }

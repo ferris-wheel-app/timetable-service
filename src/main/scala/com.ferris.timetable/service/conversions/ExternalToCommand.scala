@@ -24,15 +24,15 @@ object ExternalToCommand {
     )
   }
 
-  implicit class TaskRecordConversion(taskRecord: TaskRecord) extends CommandConversion[CreateTask] {
-    override def toCommand = CreateTask(
-      uuid = taskRecord.uuid,
+  implicit class TaskRecordConversion(taskRecord: TaskTemplateCreation) extends CommandConversion[CreateTaskTemplate] {
+    override def toCommand = CreateTaskTemplate(
+      taskId = taskRecord.taskId,
       `type` = TaskTypes.withName(taskRecord.`type`)
     )
   }
 
-  implicit class TimeBlockCreationConversion(timeBlock: TimeBlockCreation) extends CommandConversion[CreateTimeBlock] {
-    override def toCommand = CreateTimeBlock(
+  implicit class TimeBlockCreationConversion(timeBlock: TimeBlockTemplateCreation) extends CommandConversion[CreateTimeBlockTemplate] {
+    override def toCommand = CreateTimeBlockTemplate(
       start = timeBlock.start,
       finish = timeBlock.finish,
       task = timeBlock.task.toCommand

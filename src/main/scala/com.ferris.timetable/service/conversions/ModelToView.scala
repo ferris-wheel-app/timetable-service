@@ -16,48 +16,16 @@ object ModelToView {
     }
   }
 
-  implicit class ConcreteTimeBlockConversion(timeBlock: ConcreteBlock) {
-    def toView: ConcreteBlockView = {
-      ConcreteBlockView(
-        start = timeBlock.start,
-        finish = timeBlock.finish,
-        task = TaskView(
-          `type` = TaskType.toString(timeBlock.task.`type`),
-          summary = None
-        )
-      )
-    }
-  }
-
-  implicit class BufferTimeBlockConversion(timeBlock: BufferBlock) {
-    def toView: BufferBlockView = {
-      BufferBlockView(
-        start = timeBlock.start,
-        finish = timeBlock.finish,
-        firstTask = TaskView(
-          `type` = TaskType.toString(timeBlock.firstTask.`type`),
-          summary = None
-        ),
-        secondTask = TaskView(
-          `type` = TaskType.toString(timeBlock.secondTask.`type`),
-          summary = None
-        )
-      )
-    }
-  }
-
-  implicit class TimeBlockConversion(timeBlock: TimeBlock) {
-    def toView: TimeBlockView = timeBlock match {
-      case concrete: ConcreteBlock => concrete.toView
-      case buffer: BufferBlock => buffer.toView
-    }
-  }
-
   implicit class TimeBlockTemplateConversion(timeBlock: TimeBlockTemplate) {
-    def toView: TimeBlockView = timeBlock match {
-      case concrete: ConcreteBlock => concrete.toView
-      case buffer: BufferBlock => buffer.toView
-    }
+    def toView: TimeBlockTemplateView = TimeBlockTemplateView(
+      start = timeBlock.start,
+      finish = timeBlock.finish,
+      task = TaskTemplateView(
+        taskId = None,
+        `type` = TaskType.toString(timeBlock.task.`type`),
+        summary = None
+      )
+    )
   }
 
   implicit class TimetableTemplateConversion(timetableTemplate: TimetableTemplate) {
@@ -81,6 +49,49 @@ object ModelToView {
         saturday = routine.monday.toView,
         sunday = routine.monday.toView
       )
+    }
+  }
+
+  implicit class ConcreteTimeBlockConversion(timeBlock: ConcreteBlock) {
+    def toView: ConcreteBlockView = {
+      ConcreteBlockView(
+        start = timeBlock.start,
+        finish = timeBlock.finish,
+        task = ScheduledTaskView(
+          taskId = None,
+          `type` = TaskType.toString(timeBlock.task.`type`),
+          summary = None,
+          temporalStatus = None
+        )
+      )
+    }
+  }
+
+  implicit class BufferTimeBlockConversion(timeBlock: BufferBlock) {
+    def toView: BufferBlockView = {
+      BufferBlockView(
+        start = timeBlock.start,
+        finish = timeBlock.finish,
+        firstTask = ScheduledTaskView(
+          taskId = None,
+          `type` = TaskType.toString(timeBlock.firstTask.`type`),
+          summary = None,
+          temporalStatus = None
+        ),
+        secondTask = ScheduledTaskView(
+          taskId = None,
+          `type` = TaskType.toString(timeBlock.secondTask.`type`),
+          summary = None,
+          temporalStatus = None
+        )
+      )
+    }
+  }
+
+  implicit class ScheduledTimeBlockConversion(timeBlock: ScheduledTimeBlock) {
+    def toView: ScheduledTimeBlockView = timeBlock match {
+      case concrete: ConcreteBlock => concrete.toView
+      case buffer: BufferBlock => buffer.toView
     }
   }
 

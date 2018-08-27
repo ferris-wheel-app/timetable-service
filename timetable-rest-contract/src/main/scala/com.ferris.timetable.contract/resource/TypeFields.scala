@@ -8,4 +8,10 @@ object TypeFields {
     val laserDonut = "laser_donut"
     val hobby = "hobby"
   }
+
+  object TemporalStatus {
+    val previously = "previously"
+    val rightNow = "right_now"
+    val upcoming = "upcoming"
+  }
 }

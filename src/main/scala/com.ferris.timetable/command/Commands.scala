@@ -11,25 +11,19 @@ object Commands {
 
   case class UpdateMessage(sender: Option[String], content: Option[String])
 
-  case class CreateTask (
-    uuid: Option[UUID],
+  case class CreateTaskTemplate (
+    taskId: Option[UUID],
     `type`: TaskTypes.TaskType
   )
 
-  case class CreateTimeBlock (
+  case class CreateTimeBlockTemplate(
     start: LocalTime,
     finish: LocalTime,
-    task: CreateTask
-  )
-
-  case class CreateScheduledTimeBlock (
-    start: LocalTime,
-    finish: LocalTime,
-    task: CreateTask
+    task: CreateTaskTemplate
   )
 
   case class CreateTimetableTemplate (
-    blocks: Seq[CreateTimeBlock]
+    blocks: Seq[CreateTimeBlockTemplate]
   )
 
   case class CreateRoutine (
@@ -52,5 +46,20 @@ object Commands {
     friday: Option[CreateTimetableTemplate],
     saturday: Option[CreateTimetableTemplate],
     sunday: Option[CreateTimetableTemplate]
+  )
+
+  case class CreateScheduledTask (
+    taskId: UUID,
+    `type`: TaskTypes.TaskType
+  )
+
+  case class CreateScheduledTimeBlock (
+    start: LocalTime,
+    finish: LocalTime,
+    task: CreateScheduledTask
+  )
+
+  case class CreateTimetable (
+    blocks: Seq[CreateScheduledTimeBlock]
   )
 }

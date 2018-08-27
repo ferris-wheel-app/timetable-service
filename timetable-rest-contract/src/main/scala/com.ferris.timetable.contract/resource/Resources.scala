@@ -17,31 +17,31 @@ object Resources {
       content: Option[String]
     )
 
-    case class TaskRecord (
-      uuid: Option[UUID],
+    case class TaskTemplateCreation(
+      taskId: Option[UUID],
       `type`: String
     )
 
-    case class TimeBlockCreation (
+    case class TimeBlockTemplateCreation(
       start: LocalTime,
       finish: LocalTime,
-      task: TaskRecord
+      task: TaskTemplateCreation
     )
 
-    case class TimeBlockUpdate (
+    case class TimeBlockTemplateUpdate(
       start: Option[LocalTime],
       finish: Option[LocalTime],
-      task: Option[TaskRecord]
+      task: Option[TaskTemplateCreation]
     )
 
     case class TimetableTemplateCreation (
       day: String,
-      blocks: Seq[TimeBlockCreation]
+      blocks: Seq[TimeBlockTemplateCreation]
     )
 
     case class TimetableTemplateUpdate (
       day: Option[String],
-      blocks: Option[Seq[TimeBlockUpdate]]
+      blocks: Option[Seq[TimeBlockTemplateUpdate]]
     )
 
     case class RoutineCreation (
@@ -79,31 +79,20 @@ object Resources {
       content: String
     )
 
-    case class TaskView (
+    case class TaskTemplateView (
+      taskId: Option[UUID],
       `type`: String,
       summary: Option[String]
     )
 
-    sealed trait TimeBlockView {
-      def start: LocalTime
-      def finish: LocalTime
-    }
-
-    case class ConcreteBlockView (
+    case class TimeBlockTemplateView (
       start: LocalTime,
       finish: LocalTime,
-      task: TaskView
-    ) extends TimeBlockView
-
-    case class BufferBlockView (
-      start: LocalTime,
-      finish: LocalTime,
-      firstTask: TaskView,
-      secondTask: TaskView
-    ) extends TimeBlockView
+      task: TaskTemplateView
+    )
 
     case class TimetableTemplateView (
-      blocks: Seq[TimeBlockView]
+      blocks: Seq[TimeBlockTemplateView]
     )
 
     case class RoutineView (
@@ -118,9 +107,34 @@ object Resources {
       sunday: TimetableTemplateView
     )
 
+    case class ScheduledTaskView(
+      taskId: Option[UUID],
+      `type`: String,
+      summary: Option[String],
+      temporalStatus: Option[String]
+    )
+
+    sealed trait ScheduledTimeBlockView {
+      def start: LocalTime
+      def finish: LocalTime
+    }
+
+    case class ConcreteBlockView (
+      start: LocalTime,
+      finish: LocalTime,
+      task: ScheduledTaskView
+    ) extends ScheduledTimeBlockView
+
+    case class BufferBlockView (
+      start: LocalTime,
+      finish: LocalTime,
+      firstTask: ScheduledTaskView,
+      secondTask: ScheduledTaskView
+    ) extends ScheduledTimeBlockView
+
     case class TimetableView (
       date: LocalDate,
-      blocks: Seq[TimeBlockView]
+      blocks: Seq[ScheduledTimeBlockView]
     )
   }
 }

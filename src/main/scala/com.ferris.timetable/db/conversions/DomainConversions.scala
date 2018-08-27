@@ -24,8 +24,8 @@ class DomainConversions(val tables: Tables) {
     def asTimeBlock: TimeBlockTemplate = TimeBlockTemplate(
       start = row.startTime.toLocalTime,
       finish = row.finishTime.toLocalTime,
-      task = Task(
-        uuid = row.taskId.map(UUID.fromString),
+      task = TaskTemplate(
+        taskId = row.taskId.map(UUID.fromString),
         `type` = TaskTypes.withName(row.taskType)
       )
     )
