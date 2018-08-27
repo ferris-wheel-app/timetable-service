@@ -70,4 +70,18 @@ object ExternalToCommand {
       sunday = routine.sunday.map(_.toCommand)
     )
   }
+
+  implicit class ScheduledTimeBlockUpdateConversion(timeBlock: ScheduledTimeBlockUpdate) extends CommandConversion[UpdateScheduledTimeBlock] {
+    override def toCommand = UpdateScheduledTimeBlock(
+      start = timeBlock.start,
+      finish = timeBlock.finish,
+      done = timeBlock.done
+    )
+  }
+
+  implicit class TimetableUpdateConversion(template: TimetableUpdate) extends CommandConversion[UpdateTimetable] {
+    override def toCommand = UpdateTimetable(
+      blocks = template.blocks.map(_.toCommand)
+    )
+  }
 }

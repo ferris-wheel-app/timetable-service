@@ -58,7 +58,7 @@ object ModelToView {
         start = timeBlock.start,
         finish = timeBlock.finish,
         task = ScheduledTaskView(
-          taskId = None,
+          taskId = timeBlock.task.taskId,
           `type` = TaskType.toString(timeBlock.task.`type`),
           summary = None,
           temporalStatus = None
@@ -73,13 +73,13 @@ object ModelToView {
         start = timeBlock.start,
         finish = timeBlock.finish,
         firstTask = ScheduledTaskView(
-          taskId = None,
+          taskId = timeBlock.firstTask.taskId,
           `type` = TaskType.toString(timeBlock.firstTask.`type`),
           summary = None,
           temporalStatus = None
         ),
         secondTask = ScheduledTaskView(
-          taskId = None,
+          taskId = timeBlock.secondTask.taskId,
           `type` = TaskType.toString(timeBlock.secondTask.`type`),
           summary = None,
           temporalStatus = None

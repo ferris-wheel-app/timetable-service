@@ -58,7 +58,7 @@ object Model {
   case class BufferBlock (
     start: LocalTime,
     finish: LocalTime,
-    firstTask: TaskTemplate,
+    firstTask: ScheduledTask,
     secondTask: ScheduledTask
   ) extends ScheduledTimeBlock
 

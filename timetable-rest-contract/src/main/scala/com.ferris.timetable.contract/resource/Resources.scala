@@ -66,9 +66,15 @@ object Resources {
       sunday: Option[TimetableTemplateCreation]
     )
 
-//    case class TimetableUpdate (
-//      blocks: Option[Seq[TimeBlockUpdate]]
-//    )
+    case class ScheduledTimeBlockUpdate(
+      start: LocalTime,
+      finish: LocalTime,
+      done: Boolean
+    )
+
+    case class TimetableUpdate (
+      blocks: Seq[ScheduledTimeBlockUpdate]
+    )
   }
 
   object Out {
@@ -108,7 +114,7 @@ object Resources {
     )
 
     case class ScheduledTaskView(
-      taskId: Option[UUID],
+      taskId: UUID,
       `type`: String,
       summary: Option[String],
       temporalStatus: Option[String]

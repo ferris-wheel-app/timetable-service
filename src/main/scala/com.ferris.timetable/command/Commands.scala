@@ -1,6 +1,6 @@
 package com.ferris.timetable.command
 
-import java.time.LocalTime
+import java.time.{LocalDate, LocalTime}
 import java.util.UUID
 
 import com.ferris.timetable.model.Model.TaskTypes
@@ -59,7 +59,18 @@ object Commands {
     task: CreateScheduledTask
   )
 
+  case class UpdateScheduledTimeBlock (
+    start: LocalTime,
+    finish: LocalTime,
+    done: Boolean
+  )
+
   case class CreateTimetable (
+    date: LocalDate,
     blocks: Seq[CreateScheduledTimeBlock]
+  )
+
+  case class UpdateTimetable (
+    blocks: Seq[UpdateScheduledTimeBlock]
   )
 }

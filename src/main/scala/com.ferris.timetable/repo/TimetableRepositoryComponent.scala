@@ -1,5 +1,6 @@
 package com.ferris.timetable.repo
 
+import java.time.{DayOfWeek, LocalTime}
 import java.util.UUID
 
 import cats.data._
@@ -8,6 +9,8 @@ import com.ferris.timetable.db.DatabaseComponent
 import com.ferris.timetable.db.conversions.DomainConversions
 import com.ferris.timetable.model.Model._
 import com.ferris.timetable.service.exceptions.Exceptions.{MessageNotFoundException, RoutineNotFoundException}
+import com.ferris.utils.FerrisImplicits._
+import com.ferris.utils.TimerComponent
 import com.rms.miu.slickcats.DBIOInstances._
 
 import scala.concurrent.ExecutionContext
@@ -19,19 +22,21 @@ trait TimetableRepositoryComponent {
   val repo: TimetableRepository
 
   trait TimetableRepository {
-    def createMessage(creation: CreateMessage): DBIO[Message]
+    def createMessage(message: CreateMessage): DBIO[Message]
     def createRoutine(routine: CreateRoutine): DBIO[Routine]
     def createTimetable(timetable: CreateTimetable): DBIO[Timetable]
 
     def updateMessage(uuid: UUID, update: UpdateMessage): DBIO[Message]
     def updateRoutine(uuid: UUID, update: UpdateRoutine): DBIO[Boolean]
     def startRoutine(uuid: UUID): DBIO[Boolean]
+    def updateTimetable(update: UpdateTimetable): DBIO[Boolean]
 
     def getMessages: DBIO[Seq[Message]]
     def getRoutines: DBIO[Seq[Routine]]
 
     def getMessage(uuid: UUID): DBIO[Option[Message]]
     def getRoutine(uuid: UUID): DBIO[Option[Routine]]
+    def currentTemplate: DBIO[Option[TimetableTemplate]]
     def currentTimetable: DBIO[Option[Timetable]]
 
     def deleteMessage(uuid: UUID): DBIO[Boolean]
@@ -40,7 +45,7 @@ trait TimetableRepositoryComponent {
 }
 
 trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
-  this: DatabaseComponent =>
+  this: DatabaseComponent with TimerComponent =>
 
   lazy val tableConversions = new DomainConversions(tables)
   import tableConversions.tables._
@@ -53,12 +58,12 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
   class SqlTimetableRepository extends TimetableRepository {
 
     // Create endpoints
-    override def createMessage(creation: CreateMessage): DBIO[Message] = {
+    override def createMessage(message: CreateMessage): DBIO[Message] = {
       val row = MessageRow(
         id = 0L,
         uuid = UUID.randomUUID,
-        sender = creation.sender,
-        content = creation.content
+        sender = message.sender,
+        content = message.content
       )
       val action = (MessageTable returning MessageTable.map(_.id) into ((message, id) => message.copy(id = id))) += row
       action.map(_.asMessage)
@@ -90,7 +95,21 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       }).transactionally
     }
 
-    override def createTimetable(timetable: CreateTimetable) = ???
+    override def createTimetable(timetable: CreateTimetable): DBIO[Timetable] = {
+      val timeBlockRows = timetable.blocks.map { block =>
+        ScheduledTimeBlockRow(
+          id = 0L,
+          date = java.sql.Date.valueOf(timetable.date),
+          startTime = java.sql.Time.valueOf(block.start),
+          finishTime = java.sql.Time.valueOf(block.finish),
+          taskType = block.task.`type`.dbValue,
+          taskId = block.task.taskId,
+          isDone = false
+        )
+      }
+      val action = (ScheduledTimeBlockTable returning ScheduledTimeBlockTable.map(_.id)) into ((timeBlock, id) => timeBlock.copy(id = id)) ++= timeBlockRows
+      action.map(_.asTimetable(timetable.date))
+    }
 
     // Update endpoints
     override def updateMessage(uuid: UUID, update: UpdateMessage): DBIO[Message] = {
@@ -127,6 +146,16 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
         otherRoutines <- RoutineTable.filterNot(_.uuid === uuid.toString).map(_.isCurrent).update(false)
         thisRoutine <- routineByUuid(uuid).map(_.isCurrent).update(true)
       } yield (otherRoutines :: thisRoutine :: Nil).forall(_ > 0)
+    }
+
+    override def updateTimetable(update: UpdateTimetable): DBIO[Boolean] = {
+      def getSlot(start: LocalTime, finish: LocalTime) = {
+        ScheduledTimeBlockTable.filter(row => row.startTime === start.toSqlTime && row.finishTime === finish.toSqlTime)
+      }
+
+      for {
+        updates <- DBIO.sequence(update.blocks.map(block => getSlot(block.start, block.finish).map(_.isDone).update(block.done)))
+      } yield updates.forall(_ > 0)
     }
 
     // Get endpoints
@@ -169,7 +198,28 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       )).value.transactionally
     }
 
-    override def currentTimetable = ???
+    override def currentTemplate: DBIO[Option[TimetableTemplate]] = {
+      def today: DayOfTheWeek = timer.today.getDayOfWeek match {
+        case DayOfWeek.MONDAY => DayOfTheWeek.Monday
+        case DayOfWeek.TUESDAY => DayOfTheWeek.Tuesday
+        case DayOfWeek.WEDNESDAY => DayOfTheWeek.Wednesday
+        case DayOfWeek.THURSDAY => DayOfTheWeek.Thursday
+        case DayOfWeek.FRIDAY => DayOfTheWeek.Friday
+        case DayOfWeek.SATURDAY => DayOfTheWeek.Saturday
+        case DayOfWeek.SUNDAY => DayOfTheWeek.Sunday
+      }
+
+      (for {
+        currentRoutine <- OptionT[DBIO, RoutineRow](RoutineTable.filter(row => row.isCurrent === (1: Byte)).result.headOption)
+        currentTemplate <- OptionT.liftF(getWeeklyTemplate(currentRoutine.id, today))
+      } yield currentTemplate.asTimetableTemplate).value.transactionally
+    }
+
+    override def currentTimetable: DBIO[Option[Timetable]] = {
+      for {
+        currentSchedule <- ScheduledTimeBlockTable.filter(_.date === timer.today.toSqlDate).result
+      } yield if (currentSchedule.nonEmpty) Some(currentSchedule.asTimetable(timer.today)) else None
+    }
 
     // Delete endpoints
     override def deleteMessage(uuid: UUID): DBIO[Boolean] = {

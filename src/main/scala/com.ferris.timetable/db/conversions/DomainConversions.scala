@@ -1,6 +1,6 @@
 package com.ferris.timetable.db.conversions
 
-import java.sql.{Date, Timestamp}
+import java.sql.Timestamp
 import java.time.LocalDate
 import java.util.UUID
 
@@ -20,8 +20,8 @@ class DomainConversions(val tables: Tables) {
     )
   }
 
-  implicit class TimeBlockBuilder(val row: tables.TimeBlockRow) {
-    def asTimeBlock: TimeBlockTemplate = TimeBlockTemplate(
+  implicit class TimeBlockTemplateBuilder(val row: tables.TimeBlockRow) {
+    def asTimeBlockTemplate: TimeBlockTemplate = TimeBlockTemplate(
       start = row.startTime.toLocalTime,
       finish = row.finishTime.toLocalTime,
       task = TaskTemplate(
@@ -33,21 +33,27 @@ class DomainConversions(val tables: Tables) {
 
   implicit class TimetableTemplateBuilder(val rows: Seq[tables.TimeBlockRow]) {
     def asTimetableTemplate: TimetableTemplate = TimetableTemplate(
-      blocks = rows.map(_.asTimeBlock)
+      blocks = rows.map(_.asTimeBlockTemplate)
     )
   }
 
-  implicit def uuid2String(uuid: UUID): String = uuid.toString
+  implicit class ScheduledTimeBlockBuilder(val row: tables.ScheduledTimeBlockRow) {
+    def asScheduledTimeBlock: ScheduledTimeBlock = ConcreteBlock(
+      start = row.startTime.toLocalTime,
+      finish = row.finishTime.toLocalTime,
+      task = ScheduledTask(
+        taskId = UUID.fromString(row.taskId),
+        `type` = TaskTypes.withName(row.taskType)
+      )
+    )
+  }
 
-  implicit def uuid2String(uuid: Option[UUID]): Option[String] = uuid.map(_.toString)
-
-  implicit def uuid2String(uuid: Seq[UUID]): Seq[String] = uuid.map(_.toString)
+  implicit class TimetableBuilder(val rows: Seq[tables.ScheduledTimeBlockRow]) {
+    def asTimetable(date: LocalDate): Timetable = Timetable(
+      date = date,
+      blocks = rows.map(_.asScheduledTimeBlock)
+    )
+  }
 
   implicit def timestamp2DateTime(date: Timestamp): DateTime = DateTime.apply(date.getTime)
-
-  implicit def localDate2SqlDate(date: LocalDate): Date = Date.valueOf(date)
-
-  implicit def byte2Boolean(byte: Byte): Boolean = byte == 1
-
-  implicit def boolean2Byte(bool: Boolean): Byte = if (bool) 1 else 0
 }

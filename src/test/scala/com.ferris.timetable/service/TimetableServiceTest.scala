@@ -5,6 +5,7 @@ import java.util.UUID
 import com.ferris.timetable.db.{H2DatabaseComponent, H2TablesComponent}
 import com.ferris.timetable.sample.SampleData.{domain => SD}
 import com.ferris.timetable.service.exceptions.Exceptions._
+import com.ferris.utils.MockTimerComponent
 import org.mockito.Matchers.{eq => eqTo}
 import org.mockito.Mockito._
 import org.scalatest.{FunSpec, Matchers}
@@ -21,7 +22,8 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
   def newServer = new DefaultTimetableServiceComponent
     with MockTimetableRepositoryComponent
     with H2TablesComponent
-    with H2DatabaseComponent {
+    with H2DatabaseComponent
+    with MockTimerComponent {
     override val timetableService: DefaultTimetableService = new DefaultTimetableService()
   }
 
