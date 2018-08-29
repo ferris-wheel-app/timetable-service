@@ -2,10 +2,12 @@ package com.ferris.timetable.service
 
 import java.util.UUID
 
+import cats.data.EitherT
 import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.db.DatabaseComponent
 import com.ferris.timetable.model.Model._
 import com.ferris.timetable.repo.TimetableRepositoryComponent
+import com.ferris.timetable.service.exceptions.Exceptions.CurrentTemplateNotFoundException
 import com.ferris.utils.TimerComponent
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -21,6 +23,7 @@ trait TimetableServiceComponent {
     def updateMessage(uuid: UUID, update: UpdateMessage)(implicit ex: ExecutionContext): Future[Message]
     def updateRoutine(uuid: UUID, update: UpdateRoutine)(implicit ex: ExecutionContext): Future[Routine]
     def startRoutine(uuid: UUID)(implicit ex: ExecutionContext): Future[Boolean]
+    def updateTimetable(update: UpdateTimetable): Future[Boolean]
 
     def getMessages(implicit ex: ExecutionContext): Future[Seq[Message]]
     def getRoutines(implicit ex: ExecutionContext): Future[Seq[Routine]]
@@ -45,17 +48,37 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
       db.run(repo.createMessage(creation))
     }
 
-    override def createRoutine(routine: CreateRoutine)(implicit ex: ExecutionContext) = ???
+    override def createRoutine(routine: CreateRoutine)(implicit ex: ExecutionContext): Future[Routine] = {
+      db.run(repo.createRoutine(routine))
+    }
 
-    override def generateTimetable(implicit ex: ExecutionContext) = ???
+    override def generateTimetable(implicit ex: ExecutionContext): Future[Timetable] = {
+      for {
+        currentTemplate <- EitherT.fromOptionF(repo.currentTemplate, CurrentTemplateNotFoundException())
+        timetable <- CreateTimetable(
+          date = timer.today,
+          blocks = currentTemplate.blocks.map { block =>
+            block.task.
+          }
+        )
+      } yield ()
+    }
 
     override def updateMessage(uuid: UUID, update: UpdateMessage)(implicit ex: ExecutionContext): Future[Message] = {
       db.run(repo.updateMessage(uuid, update))
     }
 
-    override def updateRoutine(uuid: UUID, update: UpdateRoutine)(implicit ex: ExecutionContext) = ???
+    override def updateRoutine(uuid: UUID, update: UpdateRoutine)(implicit ex: ExecutionContext): Future[Boolean] = {
+      db.run(repo.updateRoutine(uuid, update))
+    }
 
-    override def startRoutine(uuid: UUID)(implicit ex: ExecutionContext) = ???
+    override def startRoutine(uuid: UUID)(implicit ex: ExecutionContext): Future[Boolean] = {
+      db.run(repo.startRoutine(uuid))
+    }
+
+    override def updateTimetable(update: UpdateTimetable): Future[Boolean] = {
+      db.run(repo.updateTimetable(update))
+    }
 
     override def getMessages(implicit ex: ExecutionContext): Future[Seq[Message]] = {
       db.run(repo.getMessages)
@@ -65,28 +88,24 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
       db.run(repo.getMessage(uuid))
     }
 
-    override def getRoutines(implicit ex: ExecutionContext) = ???
+    override def getRoutines(implicit ex: ExecutionContext): Future[Seq[Routine]] = {
+      db.run(repo.getRoutines)
+    }
 
-    override def getRoutine(uuid: UUID)(implicit ex: ExecutionContext) = ???
+    override def getRoutine(uuid: UUID)(implicit ex: ExecutionContext): Future[Option[Routine]] = {
+      db.run(repo.getRoutine(uuid))
+    }
 
-    override def currentTimetable(implicit ex: ExecutionContext) = ???
+    override def currentTimetable(implicit ex: ExecutionContext): Future[Option[Timetable]] = {
+      db.run(repo.currentTimetable)
+    }
 
     override def deleteMessage(uuid: UUID)(implicit ex: ExecutionContext): Future[Boolean] = {
       db.run(repo.deleteMessage(uuid))
     }
 
-    override def deleteRoutine(uuid: UUID)(implicit ex: ExecutionContext) = ???
-
-    private def today: DayOfTheWeek = {
-      timer.timestampOfNow.toLocalDateTime.getDayOfWeek match {
-        case java.time.DayOfWeek.MONDAY => DayOfTheWeek.Monday
-        case java.time.DayOfWeek.TUESDAY => DayOfTheWeek.Tuesday
-        case java.time.DayOfWeek.WEDNESDAY => DayOfTheWeek.Wednesday
-        case java.time.DayOfWeek.THURSDAY => DayOfTheWeek.Thursday
-        case java.time.DayOfWeek.FRIDAY => DayOfTheWeek.Friday
-        case java.time.DayOfWeek.SATURDAY => DayOfTheWeek.Saturday
-        case java.time.DayOfWeek.SUNDAY => DayOfTheWeek.Sunday
-      }
+    override def deleteRoutine(uuid: UUID)(implicit ex: ExecutionContext): Future[Boolean] = {
+      db.run(repo.deleteRoutine(uuid))
     }
   }
 }

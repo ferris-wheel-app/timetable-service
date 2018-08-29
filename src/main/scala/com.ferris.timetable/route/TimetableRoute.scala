@@ -20,7 +20,6 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Tim
 
   private val messagesPathSegment = "messages"
   private val routinesPathSegment = "routines"
-  private val templatesPathSegment = "templates"
   private val timetablesPathSegment = "timetables"
   private val currentPathSegment = "current"
   private val generatePathSegment = "generate"

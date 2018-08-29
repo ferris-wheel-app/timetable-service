@@ -22,7 +22,7 @@ trait TimetableResponseMappings extends FerrisResponseMappings {
 
   def mapTemplate(response: Option[TimetableTemplate]): (Success, TimetableTemplateView) = response match {
     case Some(template) => (StatusCodes.OK, template.toView)
-    case None => throw TemplateNotFoundException()
+    case None => throw CurrentTemplateNotFoundException()
   }
 
   def mapTimetable(response: Option[Timetable]): (Success, TimetableView) = response match {

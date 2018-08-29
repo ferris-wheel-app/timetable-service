@@ -8,7 +8,7 @@ object Exceptions {
 
   case class RoutineNotFoundException(message: String = "routine not found") extends TimetableServiceException(message)
 
-  case class TemplateNotFoundException(message: String = "template not found") extends TimetableServiceException(message)
+  case class CurrentTemplateNotFoundException(message: String = "no current template found") extends TimetableServiceException(message)
 
   case class TimetableNotFoundException(message: String = "timetable not found") extends TimetableServiceException(message)
 }
