@@ -75,9 +75,7 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Tim
     pathEndOrSingleSlash {
       put {
         entity(as[RoutineUpdate]) { update =>
-          onSuccess(timetableService.updateRoutine(id, update.toCommand)) { response =>
-            complete(StatusCodes.OK, response.toView)
-          }
+          onSuccess(timetableService.updateRoutine(id, update.toCommand))(outcome => complete(mapUpdate(outcome)))
         }
       }
     }

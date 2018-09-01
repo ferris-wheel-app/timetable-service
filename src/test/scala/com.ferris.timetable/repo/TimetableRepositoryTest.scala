@@ -2,7 +2,7 @@ package com.ferris.timetable.repo
 
 import java.util.UUID
 
-import org.scalatest.{AsyncFunSpec, BeforeAndAfterEach, Matchers}
+import org.scalatest.{AsyncFunSpec, BeforeAndAfterEach, Matchers, OneInstancePerTest}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.OptionValues._
 import com.ferris.timetable.sample.SampleData.{domain => SD}
@@ -13,6 +13,7 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class TimetableRepositoryTest extends AsyncFunSpec
+  with OneInstancePerTest
   with Matchers
   with ScalaFutures
   with BeforeAndAfterEach

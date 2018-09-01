@@ -1,4 +1,4 @@
-package com.ferris.timetable.table
+package com.ferris.timetable.db
 // AUTO-GENERATED Slick data model
 /** Stand-alone Slick data model for immediate use */
 object Tables extends {
@@ -23,7 +23,7 @@ trait Tables {
    *  @param uuid Database column UUID SqlType(VARCHAR), Length(36,true)
    *  @param sender Database column SENDER SqlType(VARCHAR), Length(256,true)
    *  @param content Database column CONTENT SqlType(VARCHAR), Length(2000,true) */
-  case class MessageRow(id: Long, uuid: String, sender: String, content: String)
+  final case class MessageRow(id: Long, uuid: String, sender: String, content: String)
   /** GetResult implicit for fetching MessageRow objects using plain SQL queries */
   implicit def GetResultMessageRow(implicit e0: GR[Long], e1: GR[String]): GR[MessageRow] = GR{
     prs => import prs._
@@ -55,7 +55,7 @@ trait Tables {
    *  @param uuid Database column UUID SqlType(VARCHAR), Length(36,true)
    *  @param name Database column NAME SqlType(VARCHAR), Length(256,true)
    *  @param isCurrent Database column IS_CURRENT SqlType(TINYINT) */
-  case class RoutineRow(id: Long, uuid: String, name: String, isCurrent: Byte)
+  final case class RoutineRow(id: Long, uuid: String, name: String, isCurrent: Byte)
   /** GetResult implicit for fetching RoutineRow objects using plain SQL queries */
   implicit def GetResultRoutineRow(implicit e0: GR[Long], e1: GR[String], e2: GR[Byte]): GR[RoutineRow] = GR{
     prs => import prs._
@@ -87,7 +87,7 @@ trait Tables {
    *  @param routineId Database column ROUTINE_ID SqlType(BIGINT)
    *  @param timeBlockId Database column TIME_BLOCK_ID SqlType(BIGINT)
    *  @param dayOfWeek Database column DAY_OF_WEEK SqlType(VARCHAR), Length(36,true) */
-  case class RoutineTimeBlockRow(id: Long, routineId: Long, timeBlockId: Long, dayOfWeek: String)
+  final case class RoutineTimeBlockRow(id: Long, routineId: Long, timeBlockId: Long, dayOfWeek: String)
   /** GetResult implicit for fetching RoutineTimeBlockRow objects using plain SQL queries */
   implicit def GetResultRoutineTimeBlockRow(implicit e0: GR[Long], e1: GR[String]): GR[RoutineTimeBlockRow] = GR{
     prs => import prs._
@@ -124,7 +124,7 @@ trait Tables {
    *  @param taskType Database column TASK_TYPE SqlType(VARCHAR), Length(36,true)
    *  @param taskId Database column TASK_ID SqlType(VARCHAR), Length(36,true)
    *  @param isDone Database column IS_DONE SqlType(TINYINT), Default(0) */
-  case class ScheduledTimeBlockRow(id: Long, date: java.sql.Date, startTime: java.sql.Time, finishTime: java.sql.Time, taskType: String, taskId: String, isDone: Byte = 0)
+  final case class ScheduledTimeBlockRow(id: Long, date: java.sql.Date, startTime: java.sql.Time, finishTime: java.sql.Time, taskType: String, taskId: String, isDone: Byte = 0)
   /** GetResult implicit for fetching ScheduledTimeBlockRow objects using plain SQL queries */
   implicit def GetResultScheduledTimeBlockRow(implicit e0: GR[Long], e1: GR[java.sql.Date], e2: GR[java.sql.Time], e3: GR[String], e4: GR[Byte]): GR[ScheduledTimeBlockRow] = GR{
     prs => import prs._
@@ -160,7 +160,7 @@ trait Tables {
    *  @param finishTime Database column FINISH_TIME SqlType(TIME)
    *  @param taskType Database column TASK_TYPE SqlType(VARCHAR), Length(36,true)
    *  @param taskId Database column TASK_ID SqlType(VARCHAR), Length(36,true) */
-  case class TimeBlockRow(id: Long, startTime: java.sql.Time, finishTime: java.sql.Time, taskType: String, taskId: Option[String])
+  final case class TimeBlockRow(id: Long, startTime: java.sql.Time, finishTime: java.sql.Time, taskType: String, taskId: Option[String])
   /** GetResult implicit for fetching TimeBlockRow objects using plain SQL queries */
   implicit def GetResultTimeBlockRow(implicit e0: GR[Long], e1: GR[java.sql.Time], e2: GR[String], e3: GR[Option[String]]): GR[TimeBlockRow] = GR{
     prs => import prs._

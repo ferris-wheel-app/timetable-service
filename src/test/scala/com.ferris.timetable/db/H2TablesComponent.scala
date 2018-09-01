@@ -1,6 +1,5 @@
 package com.ferris.timetable.db
 
-import com.ferris.timetable.table.Tables
 import slick.jdbc.H2Profile
 
 object H2Tables extends Tables {
