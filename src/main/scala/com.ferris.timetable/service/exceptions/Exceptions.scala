@@ -11,4 +11,6 @@ object Exceptions {
   case class CurrentTemplateNotFoundException(message: String = "no current template found") extends TimetableServiceException(message)
 
   case class TimetableNotFoundException(message: String = "timetable not found") extends TimetableServiceException(message)
+
+  case class InvalidTimetableException(message: String) extends TimetableServiceException(message)
 }

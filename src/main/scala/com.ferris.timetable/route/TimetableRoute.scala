@@ -53,7 +53,7 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Tim
     pathEndOrSingleSlash {
       post {
         onSuccess(timetableService.generateTimetable) { response =>
-          complete(StatusCodes.OK, response.toView)
+          complete(StatusCodes.OK, response)
         }
       }
     }
