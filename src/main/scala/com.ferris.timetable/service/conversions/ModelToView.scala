@@ -52,17 +52,22 @@ object ModelToView {
     }
   }
 
+  implicit class ScheduledTaskConversion(scheduledTask: ScheduledTask) {
+    def toView: ScheduledTaskView = {
+      ScheduledTaskView(
+        taskId = scheduledTask.taskId,
+        `type` = TaskType.toString(scheduledTask.`type`),
+        summary = None
+      )
+    }
+  }
+
   implicit class ConcreteTimeBlockConversion(timeBlock: ConcreteBlock) {
     def toView: ConcreteBlockView = {
       ConcreteBlockView(
         start = timeBlock.start,
         finish = timeBlock.finish,
-        task = ScheduledTaskView(
-          taskId = timeBlock.task.taskId,
-          `type` = TaskType.toString(timeBlock.task.`type`),
-          summary = None,
-          temporalStatus = None
-        )
+        task = timeBlock.task.toView
       )
     }
   }
@@ -72,18 +77,8 @@ object ModelToView {
       BufferBlockView(
         start = timeBlock.start,
         finish = timeBlock.finish,
-        firstTask = ScheduledTaskView(
-          taskId = timeBlock.firstTask.taskId,
-          `type` = TaskType.toString(timeBlock.firstTask.`type`),
-          summary = None,
-          temporalStatus = None
-        ),
-        secondTask = ScheduledTaskView(
-          taskId = timeBlock.secondTask.taskId,
-          `type` = TaskType.toString(timeBlock.secondTask.`type`),
-          summary = None,
-          temporalStatus = None
-        )
+        firstTask = timeBlock.firstTask.toView,
+        secondTask = timeBlock.secondTask.toView
       )
     }
   }

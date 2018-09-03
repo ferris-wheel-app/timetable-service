@@ -3,13 +3,15 @@ package com.ferris.timetable.service
 import java.util.UUID
 
 import cats.data.EitherT
+import cats.implicits._
 import com.ferris.planning.PlanningServiceComponent
 import com.ferris.timetable.command.Commands._
-import com.ferris.timetable.contract.resource.Resources.Out.{ConcreteBlockView, TimetableView}
+import com.ferris.timetable.contract.resource.Resources.Out._
 import com.ferris.timetable.db.DatabaseComponent
 import com.ferris.timetable.model.Model._
 import com.ferris.timetable.repo.TimetableRepositoryComponent
-import com.ferris.timetable.service.exceptions.Exceptions.{CurrentTemplateNotFoundException, InvalidTimetableException}
+import com.ferris.timetable.service.conversions.ModelToView._
+import com.ferris.timetable.service.exceptions.Exceptions.{CurrentTemplateNotFoundException, InvalidTimetableException, TimetableServiceException}
 import com.ferris.utils.TimerComponent
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -59,6 +61,16 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         template.blocks.filterNot(_.task.`type` == TaskTypes.LaserDonut).forall(_.task.taskId.nonEmpty)
       }
 
+      def fillEmptySlots(blocks: Seq[TimeBlockTemplate]) = Future.sequence {
+        blocks.collect {
+          case laserBlock @ TimeBlockTemplate(_, _, TaskTemplate(None, TaskTypes.LaserDonut)) =>
+            planningService.currentPortion.map { currentPortion =>
+              laserBlock.copy(task = TaskTemplate(currentPortion.map(_.uuid), TaskTypes.LaserDonut))
+            }
+          case otherBlock => Future.successful(otherBlock)
+        }
+      }
+
       def insertBuffers(timetable: Timetable) = {
         val slidingPairs = timetable.blocks.sliding(2).collect {case Seq(a, b) => (a, b)}.toSeq
         val blocksWithBuffers = slidingPairs.foldLeft(Seq.empty[ScheduledTimeBlock]) { case (aggregate, (first: ConcreteBlock, second: ConcreteBlock)) =>
@@ -81,19 +93,38 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         case TaskTypes.Hobby => planningService.hobby(uuid).map(_.map(_.summary))
       }
 
-      def enrichWithDetails(timetable: TimetableView) = {
-        timetable.blocks.map {
-          case concrete: ConcreteBlockView => concrete.copy(task = concrete.task.copy(summary = fet))
-        }
+      def taskView(task: ScheduledTask) = {
+        fetchSummary(task.taskId, task.`type`).map(summary => task.toView.copy(summary = summary))
       }
 
-      for {
-        currentTemplate <- EitherT.fromOptionF(repo.currentTemplate, CurrentTemplateNotFoundException())
-        _ <- EitherT.cond(isValidTemplate(currentTemplate), (), InvalidTimetableException("there are time-blocks without specified tasks"))
+      def timeBlockView(timeBlock: ScheduledTimeBlock) = timeBlock match {
+        case concreteBlock: ConcreteBlock => taskView(concreteBlock.task).map(taskView => concreteBlock.toView.copy(task = taskView))
+        case bufferBlock: BufferBlock =>
+          for {
+            firstTaskView <- taskView(bufferBlock.firstTask)
+            secondTaskView <- taskView(bufferBlock.secondTask)
+          } yield bufferBlock.toView.copy(firstTask = firstTaskView, secondTask = secondTaskView)
+      }
+
+      def timetableView(timetable: Timetable) = {
+        for {
+          timeBlockViews <- Future.sequence(timetable.blocks.map(timeBlockView))
+        } yield timetable.toView.copy(blocks = timeBlockViews)
+      }
+
+      def fromFuture[T](futureResult: Future[T]): EitherT[Future, TimetableServiceException, T] =
+        EitherT(futureResult.map(Right(_): Either[TimetableServiceException, T]).recover {
+          case exception: TimetableServiceException => Left(exception)
+        })
+
+      (for {
+        currentTemplate <- EitherT.fromOptionF(db.run(repo.currentTemplate), CurrentTemplateNotFoundException())
+        _ <- EitherT.cond[Future](isValidTemplate(currentTemplate), (), InvalidTimetableException("there are time-blocks without specified tasks"))
+        filledInBlocks <- fromFuture(fillEmptySlots(currentTemplate.blocks))
         generatedTimetable <- {
           val command = CreateTimetable(
             date = timer.today,
-            blocks = currentTemplate.blocks.map { block => CreateScheduledTimeBlock(
+            blocks = filledInBlocks.map { block => CreateScheduledTimeBlock(
               start = block.start,
               finish = block.finish,
               task = CreateScheduledTask(
@@ -102,12 +133,14 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
               )
             )}
           )
-          EitherT.liftF(repo.createTimetable(command))
+          fromFuture(db.run(repo.createTimetable(command)))
         }
-        timetableWithBuffers <- {
-          generatedTimetable.blocks.p
-        }
-      } yield ()
+        timetableWithBuffers = insertBuffers(generatedTimetable)
+        timetableView <- fromFuture(timetableView(timetableWithBuffers))
+      } yield timetableView).value.map {
+        case Right(newTimetable) => newTimetable
+        case Left(error) => throw error
+      }
     }
 
     override def updateMessage(uuid: UUID, update: UpdateMessage)(implicit ex: ExecutionContext): Future[Message] = {

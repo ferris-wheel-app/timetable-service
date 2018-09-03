@@ -2,6 +2,7 @@ package com.ferris.timetable.service
 
 import java.util.UUID
 
+import com.ferris.planning.MockPlanningServiceComponent
 import com.ferris.timetable.db.{H2DatabaseComponent, H2TablesComponent}
 import com.ferris.timetable.sample.SampleData.{domain => SD}
 import com.ferris.timetable.service.exceptions.Exceptions._
@@ -19,18 +20,20 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
 
   implicit val defaultTimeout: PatienceConfig = PatienceConfig(scaled(15.seconds))
 
-  def newServer = new DefaultTimetableServiceComponent
+  def newServer(bufferDuration: Int = 10) = new DefaultTimetableServiceComponent
     with MockTimetableRepositoryComponent
     with H2TablesComponent
     with H2DatabaseComponent
-    with MockTimerComponent {
-    override val timetableService: DefaultTimetableService = new DefaultTimetableService()
+    with MockTimerComponent
+    with MockPlanningServiceComponent {
+    private val config = TimetableConfig(bufferDuration)
+    override val timetableService: DefaultTimetableService = new DefaultTimetableService(config)
   }
 
   describe("a timetable service") {
     describe("handling messages") {
       it("should be able to create a message") {
-        val server = newServer
+        val server = newServer()
         when(server.repo.createMessage(SD.messageCreation)).thenReturn(DBIOAction.successful(SD.message))
         whenReady(server.timetableService.createMessage(SD.messageCreation)) { result =>
           result shouldBe SD.message
@@ -40,7 +43,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
       }
 
       it("should be able to update a message") {
-        val server = newServer
+        val server = newServer()
         val id = UUID.randomUUID
         val updated = SD.message
         when(server.repo.updateMessage(eqTo(id), eqTo(SD.messageUpdate))).thenReturn(DBIOAction.successful(updated))
@@ -52,7 +55,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
       }
 
       it("should return an error thrown by the repository when a message is being updated") {
-        val server = newServer
+        val server = newServer()
         val id = UUID.randomUUID
         val expectedException = MessageNotFoundException()
         when(server.repo.updateMessage(eqTo(id), eqTo(SD.messageUpdate))).thenReturn(DBIOAction.failed(expectedException))
@@ -64,7 +67,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
       }
 
       it("should be able to retrieve a message") {
-        val server = newServer
+        val server = newServer()
         val id = UUID.randomUUID
         when(server.repo.getMessage(id)).thenReturn(DBIOAction.successful(Some(SD.message)))
         whenReady(server.timetableService.getMessage(id)) { result =>
@@ -75,7 +78,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
       }
 
       it("should be able to retrieve all messages") {
-        val server = newServer
+        val server = newServer()
         val messages = Seq(SD.message, SD.message.copy(uuid = UUID.randomUUID))
         when(server.repo.getMessages).thenReturn(DBIOAction.successful(messages))
         whenReady(server.timetableService.getMessages) { result =>
@@ -86,7 +89,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
       }
 
       it("should be able to delete a message") {
-        val server = newServer
+        val server = newServer()
         val id = UUID.randomUUID
         when(server.repo.deleteMessage(id)).thenReturn(DBIOAction.successful(true))
         whenReady(server.timetableService.deleteMessage(id)) { result =>

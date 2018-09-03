@@ -116,8 +116,7 @@ object Resources {
     case class ScheduledTaskView(
       taskId: UUID,
       `type`: String,
-      summary: Option[String],
-      temporalStatus: Option[String]
+      summary: Option[String]
     )
 
     sealed trait ScheduledTimeBlockView {
