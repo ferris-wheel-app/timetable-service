@@ -44,7 +44,7 @@ lazy val rootSettings = {
       "com.typesafe.akka" %% "akka-http-jackson"          % dependencies.akkaHttpV,
       "com.typesafe.akka" %% "akka-http-xml"              % dependencies.akkaHttpV,
       "com.typesafe.akka" %% "akka-http-testkit"          % dependencies.akkaHttpV,
-      "com.ferris"        %% "ferris-http-microservice"   % dependencies.ferrisMicroserviceV,
+      "com.ferris"        %% "ferris-http-microservice"   % dependencies.ferrisMicroServiceV,
       "com.ferris"        %% "ferris-json-utils"          % dependencies.ferrisJsonUtilsV,
       "com.ferris"        %% "ferris-common-utils"        % dependencies.ferrisCommonV,
       "com.ferris"        %% "planning-rest-contract"     % dependencies.planningServiceV,
@@ -74,7 +74,7 @@ lazy val databaseSettings = Seq(
 lazy val dependencies = new {
   val akkaV                       = "2.4.16"
   val akkaHttpV                   = "10.0.1"
-  val ferrisMicroserviceV         = "0.0.1"
+  val ferrisMicroServiceV         = "0.0.2"
   val ferrisJsonUtilsV            = "0.0.2"
   val ferrisClientV               = "0.0.1"
   val ferrisCommonV               = "0.0.5"

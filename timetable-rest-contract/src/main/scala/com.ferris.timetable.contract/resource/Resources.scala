@@ -28,20 +28,8 @@ object Resources {
       task: TaskTemplateCreation
     )
 
-    case class TimeBlockTemplateUpdate(
-      start: Option[LocalTime],
-      finish: Option[LocalTime],
-      task: Option[TaskTemplateCreation]
-    )
-
     case class TimetableTemplateCreation (
-      day: String,
       blocks: Seq[TimeBlockTemplateCreation]
-    )
-
-    case class TimetableTemplateUpdate (
-      day: Option[String],
-      blocks: Option[Seq[TimeBlockTemplateUpdate]]
     )
 
     case class RoutineCreation (
