@@ -89,6 +89,16 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Tim
     }
   }
 
+  private val updateCurrentTimetableRoute = pathPrefix(timetablesPathSegment / currentPathSegment) {
+    pathEndOrSingleSlash {
+      put {
+        entity(as[TimetableUpdate]) { update =>
+          onSuccess(timetableService.updateTimetable(update.toCommand))(outcome => complete(mapUpdate(outcome)))
+        }
+      }
+    }
+  }
+
   private val getMessagesRoute = pathPrefix(messagesPathSegment) {
     pathEndOrSingleSlash {
       get {
@@ -156,7 +166,7 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Tim
     updateMessageRoute ~
     updateRoutineRoute ~
     startRoutineRoute ~
-    // updateCurrentTimetable ~
+    updateCurrentTimetableRoute ~
     getMessagesRoute ~
     getMessageRoute ~
     getRoutinesRoute ~
