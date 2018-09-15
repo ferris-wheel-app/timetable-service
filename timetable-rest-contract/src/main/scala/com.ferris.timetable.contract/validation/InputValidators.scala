@@ -33,6 +33,10 @@ object InputValidators extends InputValidation {
     checkField(TaskType.values.contains(creation.`type`), TypeField)
   }
 
+  def checkValidity(update: TimetableUpdate): Unit = {
+    checkField(update.blocks.forall(block => block.start.isBefore(block.finish)), BlocksField, "Invalid time-blocks have been provided")
+  }
+
   private def blocksAreChained(blocks: Seq[TimeBlockTemplateCreation]): Boolean = {
     slidingPairs(blocks).foldLeft(true) { case (soFar, (previous, next)) =>
       soFar && (previous.finish == next.start)
