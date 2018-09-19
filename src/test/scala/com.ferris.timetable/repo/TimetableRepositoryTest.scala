@@ -87,4 +87,125 @@ class TimetableRepositoryTest extends AsyncFunSpec
       }
     }
   }
+
+  describe("routine") {
+    describe("creating") {
+      it("should create a routine") {
+        ???
+      }
+    }
+
+    describe("updating") {
+      it("should update a routine") {
+        ???
+      }
+
+      it("should throw an exception if the routine is not found") {
+        ???
+      }
+    }
+
+    describe("starting") {
+      it("should start a routine") {
+        ???
+      }
+
+      it("should throw an exception if the routine is not found") {
+        ???
+      }
+    }
+
+    describe("retrieving") {
+      it("should retrieve a routine") {
+        ???
+      }
+
+      it("should return none if a routine is not found") {
+        ???
+      }
+
+      it("should retrieve a list of routines") {
+        ???
+      }
+    }
+
+    describe("deleting") {
+      it("should delete a routine") {
+        ???
+      }
+    }
+  }
+
+  describe("a current template") {
+    it("should be possible to retrieve if it exists") {
+      ???
+    }
+
+    it("should return none if it does not exist") {
+      ???
+    }
+  }
+
+  describe("timetable") {
+    describe("creating") {
+      it("should create a timetable") {
+        ???
+      }
+    }
+
+    describe("updating") {
+      it("should update a timetable") {
+        ???
+      }
+    }
+
+    describe("retrieving") {
+      it("should get the current timetable") {
+        ???
+      }
+    }
+  }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

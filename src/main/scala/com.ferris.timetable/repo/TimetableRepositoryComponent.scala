@@ -143,6 +143,7 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
 
     override def startRoutine(uuid: UUID): DBIO[Boolean] = {
       for {
+        _ <- routineByUuid(uuid).result.headOption.map(_.getOrElse(throw RoutineNotFoundException()))
         otherRoutines <- RoutineTable.filterNot(_.uuid === uuid.toString).map(_.isCurrent).update(false)
         thisRoutine <- routineByUuid(uuid).map(_.isCurrent).update(true)
       } yield (otherRoutines :: thisRoutine :: Nil).forall(_ > 0)
