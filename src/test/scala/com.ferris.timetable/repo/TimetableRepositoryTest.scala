@@ -167,13 +167,25 @@ class TimetableRepositoryTest extends AsyncFunSpec
 
     describe("starting") {
       it("should start a routine") {
-        val routine = db.run(repo.createRoutine(SD.routineCreation)).futureValue
-        val updateResult = db.run(repo.startRoutine(routine.uuid)).futureValue
-        val startedRoutine = db.run(repo.getRoutine(routine.uuid)).futureValue.value
+        val firstRoutine = db.run(repo.createRoutine(SD.routineCreation)).futureValue
+        val secondRoutine = db.run(repo.createRoutine(SD.routineCreation)).futureValue
+        val firstUpdate = db.run(repo.startRoutine(firstRoutine.uuid)).futureValue
+        val firstRoutineStarted = db.run(repo.getRoutine(firstRoutine.uuid)).futureValue.value
+        val secondRoutineNotStarted = db.run(repo.getRoutine(secondRoutine.uuid)).futureValue.value
 
-        routine.isCurrent shouldBe false
-        updateResult shouldBe true
-        startedRoutine.isCurrent shouldBe true
+        firstRoutine.isCurrent shouldBe false
+        secondRoutine.isCurrent shouldBe false
+        firstUpdate shouldBe true
+        firstRoutineStarted.isCurrent shouldBe true
+        secondRoutineNotStarted.isCurrent shouldBe false
+
+        val secondUpdate = db.run(repo.startRoutine(secondRoutine.uuid)).futureValue
+        val firstRoutineStopped = db.run(repo.getRoutine(firstRoutine.uuid)).futureValue.value
+        val secondRoutineStarted = db.run(repo.getRoutine(secondRoutine.uuid)).futureValue.value
+
+        secondUpdate shouldBe true
+        firstRoutineStopped.isCurrent shouldBe false
+        secondRoutineStarted.isCurrent shouldBe true
       }
 
       it("should throw an exception if the routine is not found") {
@@ -185,32 +197,57 @@ class TimetableRepositoryTest extends AsyncFunSpec
 
     describe("retrieving") {
       it("should retrieve a routine") {
-        ???
+        val created = db.run(repo.createRoutine(SD.routineCreation)).futureValue
+        val retrieved = db.run(repo.getRoutine(created.uuid)).futureValue
+        retrieved should not be empty
+        retrieved.value shouldBe created
       }
 
       it("should return none if a routine is not found") {
-        ???
+        val retrieved = db.run(repo.getRoutine(UUID.randomUUID)).futureValue
+        retrieved shouldBe empty
       }
 
       it("should retrieve a list of routines") {
-        ???
+        val created1 = db.run(repo.createRoutine(SD.routineCreation)).futureValue
+        val created2 = db.run(repo.createRoutine(SD.routineCreation.copy(name = "Spring"))).futureValue
+        val retrieved = db.run(repo.getRoutines).futureValue
+        retrieved should not be empty
+        retrieved shouldBe Seq(created1, created2)
       }
     }
 
     describe("deleting") {
       it("should delete a routine") {
-        ???
+        val created = db.run(repo.createRoutine(SD.routineCreation)).futureValue
+        val deletion = db.run(repo.deleteRoutine(created.uuid)).futureValue
+        val retrieved = db.run(repo.getRoutine(created.uuid)).futureValue
+        deletion shouldBe true
+        retrieved shouldBe empty
       }
     }
   }
 
   describe("a current template") {
     it("should be possible to retrieve if it exists") {
-      ???
+      db.run(repo.createRoutine(SD.routineCreation)).futureValue
+      val chosenRoutine = db.run(repo.createRoutine(SD.routineCreation)).futureValue
+
+      db.run(repo.startRoutine(chosenRoutine.uuid)).futureValue
+
+      val startedRoutine = db.run(repo.currentTemplate).futureValue
+
+      startedRoutine should not be empty
+      startedRoutine.value shouldBe chosenRoutine
     }
 
     it("should return none if it does not exist") {
-      ???
+      db.run(repo.createRoutine(SD.routineCreation)).futureValue
+      db.run(repo.createRoutine(SD.routineCreation)).futureValue
+
+      val startedRoutine = db.run(repo.currentTemplate).futureValue
+
+      startedRoutine shouldBe empty
     }
   }
 
