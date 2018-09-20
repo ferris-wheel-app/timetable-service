@@ -1,5 +1,6 @@
 package com.ferris.timetable.sample
 
+import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, LocalTime}
 import java.util.UUID
 
@@ -10,7 +11,7 @@ import com.ferris.timetable.command.Commands._
 
 object SampleData {
 
-  private val now = LocalTime.now
+  private val now = LocalTime.now.truncatedTo(ChronoUnit.MINUTES)
   private val later = now.plusHours(1L)
   private val today = LocalDate.now
 
@@ -26,7 +27,7 @@ object SampleData {
     )
 
     val message = Message(
-      uuid = UUID.randomUUID(),
+      uuid = UUID.randomUUID,
       sender = "Dave",
       content = "Open the pod bay doors, HAL."
     )
@@ -73,7 +74,7 @@ object SampleData {
     )
 
     val routineUpdate = UpdateRoutine(
-      name = Some("Autumn"),
+      name = Some("Winter"),
       monday = Some(timetableTemplateCreation),
       tuesday = Some(timetableTemplateCreation),
       wednesday = Some(timetableTemplateCreation),

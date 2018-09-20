@@ -146,7 +146,7 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
         _ <- routineByUuid(uuid).result.headOption.map(_.getOrElse(throw RoutineNotFoundException()))
         otherRoutines <- RoutineTable.filterNot(_.uuid === uuid.toString).map(_.isCurrent).update(false)
         thisRoutine <- routineByUuid(uuid).map(_.isCurrent).update(true)
-      } yield (otherRoutines :: thisRoutine :: Nil).forall(_ > 0)
+      } yield (otherRoutines :: thisRoutine :: Nil).exists(_ > 0)
     }
 
     override def updateTimetable(update: UpdateTimetable): DBIO[Boolean] = {
