@@ -1,5 +1,6 @@
 package com.ferris.timetable.repo
 
+import java.time.{LocalDate, LocalTime}
 import java.util.UUID
 
 import com.ferris.timetable.model.Model.TaskTypes
@@ -9,6 +10,7 @@ import org.scalatest.OptionValues._
 import com.ferris.timetable.sample.SampleData.{domain => SD}
 import com.ferris.timetable.service.exceptions.Exceptions._
 import com.ferris.utils.MockTimerComponent
+import org.mockito.Mockito._
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
@@ -230,15 +232,46 @@ class TimetableRepositoryTest extends AsyncFunSpec
 
   describe("a current template") {
     it("should be possible to retrieve if it exists") {
-      db.run(repo.createRoutine(SD.routineCreation)).futureValue
-      val chosenRoutine = db.run(repo.createRoutine(SD.routineCreation)).futureValue
+      val taskId = UUID.randomUUID
+      val routineCreation = SD.routineCreation.copy(
+        name = "Summer",
+        friday = SD.timetableTemplateCreation.copy(
+          blocks = SD.timeBlockTemplateCreation.copy(
+            task = SD.taskTemplateCreation.copy(
+              taskId = Some(taskId),
+              `type` = TaskTypes.Thread
+            )
+          ) :: SD.timeBlockTemplateCreation.copy(
+            task = SD.taskTemplateCreation.copy(
+              taskId = None,
+              `type` = TaskTypes.Hobby
+            )
+          ) :: Nil
+        )
+      )
+      val expectedTemplate = SD.timetableTemplate.copy(
+        blocks = SD.timeBlockTemplate.copy(
+          task = SD.taskTemplate.copy(
+            taskId = Some(taskId),
+            `type` = TaskTypes.Thread
+          )
+        ) :: SD.timeBlockTemplate.copy(
+          task = SD.taskTemplate.copy(
+            taskId = None,
+            `type` = TaskTypes.Hobby
+          )
+        ) :: Nil
+      )
+      when(timer.today).thenReturn(LocalDate.of(2018, 9, 21)) // Friday
 
+      db.run(repo.createRoutine(SD.routineCreation)).futureValue
+      val chosenRoutine = db.run(repo.createRoutine(routineCreation)).futureValue
       db.run(repo.startRoutine(chosenRoutine.uuid)).futureValue
 
-      val startedRoutine = db.run(repo.currentTemplate).futureValue
+      val chosenTemplate = db.run(repo.currentTemplate).futureValue
 
-      startedRoutine should not be empty
-      startedRoutine.value shouldBe chosenRoutine
+      chosenTemplate should not be empty
+      chosenTemplate.value shouldBe expectedTemplate
     }
 
     it("should return none if it does not exist") {
@@ -254,13 +287,35 @@ class TimetableRepositoryTest extends AsyncFunSpec
   describe("timetable") {
     describe("creating") {
       it("should create a timetable") {
-        ???
+        val blocks = SD.concreteBlock.copy(
+          task = SD.scheduledTask.copy(
+            taskId = SD.scheduledTaskCreation.taskId,
+            `type` = SD.scheduledTaskCreation.`type`
+          )
+        ) :: Nil
+        val created = db.run(repo.createTimetable(SD.timetableCreation)).futureValue
+        created shouldBe SD.timetable.copy(blocks = blocks)
       }
     }
 
     describe("updating") {
       it("should update a timetable") {
-        ???
+        val startTime = LocalTime.now
+        val finishTime = LocalTime.now.plusHours(2L)
+        val laterStartTime = LocalTime.now
+        val laterFinishTime = LocalTime.now.plusHours(2L)
+        val blocksCreation = SD.scheduledTimeBlockCreation.copy(start = startTime, finish = finishTime) ::
+          SD.scheduledTimeBlockCreation.copy(start = laterStartTime, finish = laterFinishTime) :: Nil
+        val blocksUpdate = SD.scheduledTimeBlockUpdate.copy(start = startTime, finish = finishTime, done = true) :: Nil
+        val created = db.run(repo.createTimetable(SD.timetableCreation.copy(blocks = blocksCreation))).futureValue
+        val updateStatus = db.run(repo.updateTimetable(SD.timetableUpdate.copy(blocks = blocksUpdate))).futureValue
+        val updated = db.run(repo.currentTimetable).futureValue
+        val expected = created.copy(blocks = SD.concreteBlock.copy(task = SD.scheduledTask.copy()))
+
+        updateStatus shouldBe true
+        updated should not be empty
+        updated.value should not be created
+
       }
     }
 
