@@ -1,5 +1,6 @@
 package com.ferris.timetable.repo
 
+import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, LocalTime}
 import java.util.UUID
 
@@ -298,30 +299,59 @@ class TimetableRepositoryTest extends AsyncFunSpec
       }
     }
 
+    describe("retrieving") {
+      it("should get the current timetable") {
+        val taskId = UUID.randomUUID
+        val startTime = LocalTime.now.truncatedTo(ChronoUnit.MINUTES)
+        val finishTime = startTime.plusHours(2L)
+        val blocksCreation = SD.scheduledTimeBlockCreation.copy(start = startTime, finish = finishTime, task = SD.scheduledTaskCreation.copy(taskId = taskId)) :: Nil
+        val created = db.run(repo.createTimetable(SD.timetableCreation.copy(blocks = blocksCreation))).futureValue
+        val currentTimetable = db.run(repo.currentTimetable).futureValue
+
+        currentTimetable.value shouldBe created
+      }
+    }
+
     describe("updating") {
       it("should update a timetable") {
-        val startTime = LocalTime.now
-        val finishTime = LocalTime.now.plusHours(2L)
-        val laterStartTime = LocalTime.now
-        val laterFinishTime = LocalTime.now.plusHours(2L)
-        val blocksCreation = SD.scheduledTimeBlockCreation.copy(start = startTime, finish = finishTime) ::
-          SD.scheduledTimeBlockCreation.copy(start = laterStartTime, finish = laterFinishTime) :: Nil
+        val taskId = UUID.randomUUID
+        val startTime = LocalTime.now.truncatedTo(ChronoUnit.MINUTES)
+        val finishTime = startTime.plusHours(2L)
+        val laterStartTime = finishTime
+        val laterFinishTime = finishTime.plusHours(2L)
+        val firstTask = SD.scheduledTask.copy(taskId = taskId, isDone = false)
+        val secondTask = SD.scheduledTask.copy(taskId = taskId, isDone = false)
+        val firstBlock = SD.concreteBlock.copy(start = startTime, finish = finishTime, task = firstTask)
+        val secondBlock = SD.concreteBlock.copy(start = laterStartTime, finish = laterFinishTime, task = secondTask)
+        val blocksCreation = SD.scheduledTimeBlockCreation.copy(start = startTime, finish = finishTime, task = SD.scheduledTaskCreation.copy(taskId = taskId)) ::
+          SD.scheduledTimeBlockCreation.copy(start = laterStartTime, finish = laterFinishTime, task = SD.scheduledTaskCreation.copy(taskId = taskId)) :: Nil
         val blocksUpdate = SD.scheduledTimeBlockUpdate.copy(start = startTime, finish = finishTime, done = true) :: Nil
         val created = db.run(repo.createTimetable(SD.timetableCreation.copy(blocks = blocksCreation))).futureValue
         val updateStatus = db.run(repo.updateTimetable(SD.timetableUpdate.copy(blocks = blocksUpdate))).futureValue
         val updated = db.run(repo.currentTimetable).futureValue
-        val expected = created.copy(blocks = SD.concreteBlock.copy(task = SD.scheduledTask.copy()))
+        val expected = created.copy(blocks = firstBlock.copy(task = firstTask.copy(isDone = true)) :: secondBlock :: Nil)
 
         updateStatus shouldBe true
         updated should not be empty
         updated.value should not be created
-
+        updated.value shouldBe expected
       }
-    }
 
-    describe("retrieving") {
-      it("should get the current timetable") {
-        ???
+      it("should return false if the specified time-slot is not found") {
+        val taskId = UUID.randomUUID
+        val startTime = LocalTime.now.truncatedTo(ChronoUnit.MINUTES)
+        val finishTime = startTime.plusHours(2L)
+        val laterStartTime = finishTime
+        val laterFinishTime = finishTime.plusHours(2L)
+        val blocksCreation = SD.scheduledTimeBlockCreation.copy(start = startTime, finish = finishTime, task = SD.scheduledTaskCreation.copy(taskId = taskId)) :: Nil
+        val blocksUpdate = SD.scheduledTimeBlockUpdate.copy(start = laterStartTime, finish = laterFinishTime, done = true) :: Nil
+        val created = db.run(repo.createTimetable(SD.timetableCreation.copy(blocks = blocksCreation))).futureValue
+        val updateStatus = db.run(repo.updateTimetable(SD.timetableUpdate.copy(blocks = blocksUpdate))).futureValue
+        val updated = db.run(repo.currentTimetable).futureValue
+
+        updateStatus shouldBe false
+        updated should not be empty
+        updated.value shouldBe created
       }
     }
   }

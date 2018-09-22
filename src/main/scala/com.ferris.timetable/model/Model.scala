@@ -41,7 +41,8 @@ object Model {
 
   case class ScheduledTask (
     taskId: UUID,
-    `type`: TaskTypes.TaskType
+    `type`: TaskTypes.TaskType,
+    isDone: Boolean
   )
 
   sealed trait ScheduledTimeBlock {

@@ -8,8 +8,9 @@ import com.ferris.timetable.contract.resource.Resources.In._
 import com.ferris.timetable.contract.resource.Resources.Out._
 import com.ferris.timetable.model.Model._
 import com.ferris.timetable.command.Commands._
+import com.ferris.utils.DefaultTimerComponent
 
-object SampleData {
+object SampleData extends DefaultTimerComponent {
 
   private val now = LocalTime.now.truncatedTo(ChronoUnit.MINUTES)
   private val later = now.plusHours(1L)
@@ -104,7 +105,8 @@ object SampleData {
 
     val scheduledTask = ScheduledTask(
       taskId = UUID.randomUUID,
-      `type` = TaskTypes.LaserDonut
+      `type` = TaskTypes.LaserDonut,
+      isDone = false
     )
 
     val scheduledTimeBlockCreation = CreateScheduledTimeBlock(
@@ -234,7 +236,8 @@ object SampleData {
     val scheduledTask = ScheduledTaskView(
       taskId = domain.scheduledTask.taskId,
       `type` = TaskType.toString(domain.scheduledTask.`type`),
-      summary = Some("Do stuff now!")
+      summary = Some("Do stuff now!"),
+      isDone = true
     )
 
     val scheduledTimeBlockUpdate = ScheduledTimeBlockUpdate(

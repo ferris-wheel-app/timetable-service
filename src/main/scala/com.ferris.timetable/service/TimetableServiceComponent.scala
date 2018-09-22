@@ -89,7 +89,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
       def fetchSummary(uuid: UUID, taskType: TaskTypes.TaskType) = taskType match {
         case TaskTypes.Thread => planningService.laserDonut(uuid).map(_.map(_.summary))
         case TaskTypes.Weave => planningService.weave(uuid).map(_.map(_.summary))
-        case TaskTypes.LaserDonut => planningService.laserDonut(uuid).map(_.map(_.summary))
+        case TaskTypes.LaserDonut => planningService.portion(uuid).map(_.map(_.summary))
         case TaskTypes.Hobby => planningService.hobby(uuid).map(_.map(_.summary))
       }
 

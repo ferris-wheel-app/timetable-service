@@ -57,7 +57,8 @@ object ModelToView {
       ScheduledTaskView(
         taskId = scheduledTask.taskId,
         `type` = TaskType.toString(scheduledTask.`type`),
-        summary = None
+        summary = None,
+        isDone = scheduledTask.isDone
       )
     }
   }

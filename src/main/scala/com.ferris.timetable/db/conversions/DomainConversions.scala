@@ -7,6 +7,7 @@ import java.util.UUID
 import akka.http.scaladsl.model.DateTime
 import com.ferris.timetable.db.Tables
 import com.ferris.timetable.model.Model._
+import com.ferris.utils.FerrisImplicits._
 
 import scala.language.implicitConversions
 
@@ -43,7 +44,8 @@ class DomainConversions(val tables: Tables) {
       finish = row.finishTime.toLocalTime,
       task = ScheduledTask(
         taskId = UUID.fromString(row.taskId),
-        `type` = TaskTypes.withName(row.taskType)
+        `type` = TaskTypes.withName(row.taskType),
+        isDone = row.isDone
       )
     )
   }
