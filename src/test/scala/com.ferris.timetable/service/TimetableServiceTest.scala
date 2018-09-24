@@ -99,5 +99,98 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         }
       }
     }
+
+    describe("handling routines") {
+      it("should be able to create a routine") {
+        val server = newServer()
+        when(server.repo.createRoutine(SD.routineCreation)).thenReturn(DBIOAction.successful(SD.routine))
+        whenReady(server.timetableService.createRoutine(SD.routineCreation)) { result =>
+          result shouldBe SD.routine
+          verify(server.repo, times(1)).createRoutine(SD.routineCreation)
+          verifyNoMoreInteractions(server.repo)
+        }
+      }
+
+      it("should be able to update a routine") {
+        val server = newServer()
+        val id = UUID.randomUUID
+        when(server.repo.updateRoutine(eqTo(id), eqTo(SD.routineUpdate))).thenReturn(DBIOAction.successful(true))
+        whenReady(server.timetableService.updateRoutine(id, SD.routineUpdate)) { result =>
+          result shouldBe true
+          verify(server.repo, times(1)).updateRoutine(eqTo(id), eqTo(SD.routineUpdate))
+          verifyNoMoreInteractions(server.repo)
+        }
+      }
+
+      it("should be able to start a routine") {
+        val server = newServer()
+        val id = UUID.randomUUID
+        when(server.repo.startRoutine(eqTo(id))).thenReturn(DBIOAction.successful(true))
+        whenReady(server.timetableService.startRoutine(id)) { result =>
+          result shouldBe true
+          verify(server.repo, times(1)).startRoutine(eqTo(id))
+          verifyNoMoreInteractions(server.repo)
+        }
+      }
+
+      it("should be able to retrieve a routine") {
+        val server = newServer()
+        val id = UUID.randomUUID
+        when(server.repo.getRoutine(id)).thenReturn(DBIOAction.successful(Some(SD.routine)))
+        whenReady(server.timetableService.getRoutine(id)) { result =>
+          result shouldBe Some(SD.routine)
+          verify(server.repo, times(1)).getRoutine(id)
+          verifyNoMoreInteractions(server.repo)
+        }
+      }
+
+      it("should be able to retrieve all routines") {
+        val server = newServer()
+        val routines = Seq(SD.routine, SD.routine.copy(uuid = UUID.randomUUID))
+        when(server.repo.getRoutines).thenReturn(DBIOAction.successful(routines))
+        whenReady(server.timetableService.getRoutines) { result =>
+          result shouldBe routines
+          verify(server.repo, times(1)).getRoutines
+          verifyNoMoreInteractions(server.repo)
+        }
+      }
+
+      it("should be able to delete a routine") {
+        val server = newServer()
+        val id = UUID.randomUUID
+        when(server.repo.deleteRoutine(id)).thenReturn(DBIOAction.successful(true))
+        whenReady(server.timetableService.deleteRoutine(id)) { result =>
+          result shouldBe true
+          verify(server.repo, times(1)).deleteRoutine(id)
+          verifyNoMoreInteractions(server.repo)
+        }
+      }
+    }
+
+    describe("handling timetables") {
+      it("should be able to generate a timetable") {
+        ???
+      }
+
+      it("should be able to update a timetable") {
+        val server = newServer()
+        when(server.repo.updateTimetable(eqTo(SD.timetableUpdate))).thenReturn(DBIOAction.successful(true))
+        whenReady(server.timetableService.updateTimetable(SD.timetableUpdate)) { result =>
+          result shouldBe true
+          verify(server.repo, times(1)).updateTimetable(eqTo(SD.timetableUpdate))
+          verifyNoMoreInteractions(server.repo)
+        }
+      }
+
+      it("should be able to retrieve the current timetable") {
+        val server = newServer()
+        when(server.repo.currentTimetable).thenReturn(DBIOAction.successful(Some(SD.timetable)))
+        whenReady(server.timetableService.currentTimetable) { result =>
+          result shouldBe Some(SD.timetable)
+          verify(server.repo, times(1)).currentTimetable
+          verifyNoMoreInteractions(server.repo)
+        }
+      }
+    }
   }
 }
