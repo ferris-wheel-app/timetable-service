@@ -73,7 +73,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
 
       def insertBuffers(timetable: Timetable) = {
         val slidingPairs = timetable.blocks.sliding(2).collect { case Seq(a, b) => (a, b) }.toSeq
-        val blocksWithBuffers = slidingPairs.foldLeft(Seq.empty[ScheduledTimeBlock]) { case (aggregate, (first: ConcreteBlock, second: ConcreteBlock)) =>
+        val blocksWithBuffers = slidingPairs.foldLeft(timetable.blocks.head :: Nil) { case (aggregate, (first: ConcreteBlock, second: ConcreteBlock)) =>
           val bufferHalf = timetableConfig.bufferDuration / 2
           val bufferBlock = BufferBlock(
             start = first.finish.minusMinutes(bufferHalf),
@@ -81,13 +81,13 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
             firstTask = first.task,
             secondTask = second.task
           )
-          aggregate :+ first :+ bufferBlock :+ second
+          aggregate :+ bufferBlock :+ second
         }
         timetable.copy(blocks = blocksWithBuffers)
       }
 
       def fetchSummary(uuid: UUID, taskType: TaskTypes.TaskType) = taskType match {
-        case TaskTypes.Thread => planningService.laserDonut(uuid).map(_.map(_.summary))
+        case TaskTypes.Thread => planningService.thread(uuid).map(_.map(_.summary))
         case TaskTypes.Weave => planningService.weave(uuid).map(_.map(_.summary))
         case TaskTypes.LaserDonut => planningService.portion(uuid).map(_.map(_.summary))
         case TaskTypes.Hobby => planningService.hobby(uuid).map(_.map(_.summary))

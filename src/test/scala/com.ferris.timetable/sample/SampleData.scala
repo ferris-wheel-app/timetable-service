@@ -1,9 +1,10 @@
 package com.ferris.timetable.sample
 
 import java.time.temporal.ChronoUnit
-import java.time.{LocalDate, LocalTime}
+import java.time.{LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
+import com.ferris.planning.contract.resource.Resources.Out.{ PortionView, ThreadView, WeaveView, HobbyView }
 import com.ferris.timetable.contract.resource.Resources.In._
 import com.ferris.timetable.contract.resource.Resources.Out._
 import com.ferris.timetable.model.Model._
@@ -266,6 +267,53 @@ object SampleData extends DefaultTimerComponent {
     val timetable = TimetableView(
       date = today,
       blocks = concreteBlock :: bufferBlock :: concreteBlock :: Nil
+    )
+
+    val thread = ThreadView(
+      uuid = UUID.randomUUID,
+      goalId = Some(UUID.randomUUID),
+      summary = "Go for a run",
+      description = "Go for a run",
+      status = "planned",
+      createdOn = LocalDateTime.now,
+      lastModified = None,
+      lastPerformed = None
+    )
+
+    val weave = WeaveView(
+      uuid = UUID.randomUUID,
+      goalId = Some(UUID.randomUUID),
+      summary = "Organise a tech lecture",
+      description = "Create a presentation about Kafka",
+      `type` = "PDR",
+      status = "planned",
+      createdOn = LocalDateTime.now,
+      lastModified = None,
+      lastPerformed = None
+    )
+
+    val portion = PortionView(
+      uuid = UUID.randomUUID,
+      laserDonutId = UUID.randomUUID,
+      summary = "Write tests for the TimetableService.",
+      order = 1,
+      status = "planned",
+      createdOn = LocalDateTime.now,
+      lastModified = None,
+      lastPerformed = None
+    )
+
+    val hobby = HobbyView(
+      uuid = UUID.randomUUID,
+      goalId = Some(UUID.randomUUID),
+      summary = "Yoga",
+      description = "Train in Acro-Yoga",
+      frequency = "continuous",
+      `type` = "active",
+      status = "planned",
+      createdOn = LocalDateTime.now,
+      lastModified = None,
+      lastPerformed = None
     )
   }
 }
