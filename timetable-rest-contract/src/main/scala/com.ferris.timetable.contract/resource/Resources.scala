@@ -2,6 +2,7 @@ package com.ferris.timetable.contract.resource
 
 import java.time.{LocalDate, LocalTime}
 import java.util.UUID
+import com.ferris.timetable.contract.validation.InputValidators._
 
 object Resources {
 
@@ -20,17 +21,23 @@ object Resources {
     case class TaskTemplateCreation(
       taskId: Option[UUID],
       `type`: String
-    )
+    ) {
+      checkValidity(this)
+    }
 
     case class TimeBlockTemplateCreation(
       start: LocalTime,
       finish: LocalTime,
       task: TaskTemplateCreation
-    )
+    ) {
+      checkValidity(this)
+    }
 
     case class TimetableTemplateCreation (
       blocks: Seq[TimeBlockTemplateCreation]
-    )
+    ) {
+      checkValidity(this)
+    }
 
     case class RoutineCreation (
       name: String,
@@ -62,7 +69,9 @@ object Resources {
 
     case class TimetableUpdate (
       blocks: Seq[ScheduledTimeBlockUpdate]
-    )
+    ) {
+      checkValidity(this)
+    }
   }
 
   object Out {
