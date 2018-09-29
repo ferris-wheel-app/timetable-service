@@ -1,6 +1,5 @@
 package com.ferris.timetable.contract.sample
 
-import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
@@ -10,8 +9,8 @@ import com.ferris.timetable.contract.resource.Resources.Out._
 
 object SampleData {
 
-  private val now = LocalTime.now.truncatedTo(ChronoUnit.MINUTES)
-  private val later = now.plusHours(1L)
+  private val now = LocalTime.of(6, 0)
+  private val later = now.plusHours(16L)
   private val today = LocalDate.now
 
   val messageCreation = MessageCreation(

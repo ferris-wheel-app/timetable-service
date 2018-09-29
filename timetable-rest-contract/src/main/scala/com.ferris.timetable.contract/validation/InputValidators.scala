@@ -12,7 +12,8 @@ object InputValidators extends InputValidation {
   private val BlocksField = "blocks"
   private val StartField = "start"
 
-  private val WholeDay = 86400L
+  private val MinimumActiveHours = 43200L
+  private val MaximumActiveHours = 57600L
 
   // Check that the time-blocks are in order.
   // Check that there are no gaps and overlaps between time-blocks.
@@ -20,7 +21,7 @@ object InputValidators extends InputValidation {
   // Check that time-blocks are provided.
   def checkValidity(creation: TimetableTemplateCreation): Unit = {
     checkField(blocksAreChained(creation.blocks), BlocksField, "Time-blocks should be provided in order and not contain any gaps or overlaps")
-    checkField(occupiesWholeDay(creation.blocks), BlocksField, "Time-blocks should add up to exactly 24 hours")
+    checkField(occupiesAcceptableDuration(creation.blocks), BlocksField, "Time-blocks should in total be at least 12 hours and no more than 16 hours")
   }
 
   // Check that the start-time occurs before the finish-time.
@@ -43,10 +44,11 @@ object InputValidators extends InputValidation {
     }
   }
 
-  private def occupiesWholeDay(blocks: Seq[TimeBlockTemplateCreation]): Boolean = {
-    blocks.foldLeft(0L) { case (occupiedPeriod, block) =>
+  private def occupiesAcceptableDuration(blocks: Seq[TimeBlockTemplateCreation]): Boolean = {
+    val totalDuration = blocks.foldLeft(0L) { case (occupiedPeriod, block) =>
       occupiedPeriod + Duration.between(block.start, block.finish).getSeconds
-    } == WholeDay
+    }
+    totalDuration >= MinimumActiveHours && totalDuration <= MaximumActiveHours
   }
 
   private def slidingPairs[T](list: Seq[T]): Seq[(T, T)] = {

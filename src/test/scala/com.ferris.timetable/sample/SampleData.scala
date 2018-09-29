@@ -1,6 +1,5 @@
 package com.ferris.timetable.sample
 
-import java.time.temporal.ChronoUnit
 import java.time.{LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
@@ -13,8 +12,8 @@ import com.ferris.utils.DefaultTimerComponent
 
 object SampleData extends DefaultTimerComponent {
 
-  private val now = LocalTime.now.truncatedTo(ChronoUnit.MINUTES)
-  private val later = now.plusHours(1L)
+  private val now = LocalTime.of(6, 0)
+  private val later = now.plusHours(16L)
   private val today = LocalDate.now
 
   object domain {
