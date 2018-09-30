@@ -176,7 +176,7 @@ object SampleData extends DefaultTimerComponent {
     val taskTemplate = TaskTemplateView(
       taskId = domain.taskTemplate.taskId,
       `type` = TaskType.toString(domain.taskTemplate.`type`),
-      summary = Some("Do stuff")
+      summary = None
     )
 
     val timeBlockTemplateCreation = TimeBlockTemplateCreation(
@@ -236,7 +236,7 @@ object SampleData extends DefaultTimerComponent {
     val scheduledTask = ScheduledTaskView(
       taskId = domain.scheduledTask.taskId,
       `type` = TaskType.toString(domain.scheduledTask.`type`),
-      summary = Some("Do stuff now!"),
+      summary = None,
       isDone = true
     )
 
