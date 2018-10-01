@@ -237,7 +237,7 @@ object SampleData extends DefaultTimerComponent {
       taskId = domain.scheduledTask.taskId,
       `type` = TaskType.toString(domain.scheduledTask.`type`),
       summary = None,
-      isDone = true
+      isDone = false
     )
 
     val scheduledTimeBlockUpdate = ScheduledTimeBlockUpdate(

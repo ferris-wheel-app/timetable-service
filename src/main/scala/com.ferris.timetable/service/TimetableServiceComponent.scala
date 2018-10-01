@@ -27,7 +27,7 @@ trait TimetableServiceComponent {
     def updateMessage(uuid: UUID, update: UpdateMessage)(implicit ex: ExecutionContext): Future[Message]
     def updateRoutine(uuid: UUID, update: UpdateRoutine)(implicit ex: ExecutionContext): Future[Boolean]
     def startRoutine(uuid: UUID)(implicit ex: ExecutionContext): Future[Boolean]
-    def updateTimetable(update: UpdateTimetable): Future[Boolean]
+    def updateCurrentTimetable(update: UpdateTimetable)(implicit ex: ExecutionContext): Future[Boolean]
 
     def getMessages(implicit ex: ExecutionContext): Future[Seq[Message]]
     def getRoutines(implicit ex: ExecutionContext): Future[Seq[Routine]]
@@ -155,7 +155,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
       db.run(repo.startRoutine(uuid))
     }
 
-    override def updateTimetable(update: UpdateTimetable): Future[Boolean] = {
+    override def updateCurrentTimetable(update: UpdateTimetable)(implicit ex: ExecutionContext): Future[Boolean] = {
       db.run(repo.updateTimetable(update))
     }
 

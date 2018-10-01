@@ -265,6 +265,65 @@ class TimetableRouteTest extends RouteTestFramework {
         }
       }
     }
+
+    describe("handling timetables") {
+      describe("generating a timetable") {
+        it("should respond with the generated timetable") {
+          when(testServer.timetableService.generateTimetable(any())).thenReturn(Future.successful(rest.timetable))
+          Post("/api/timetables/generate") ~> route ~> check {
+            status shouldBe StatusCodes.OK
+            responseAs[Envelope[TimetableView]].data shouldBe rest.timetable
+            verify(testServer.timetableService, times(1)).generateTimetable(any())
+            verifyNoMoreInteractions(testServer.timetableService)
+          }
+        }
+      }
+
+      describe("updating a timetable") {
+        it("should respond with OK if the timetable gets updated") {
+          val update = rest.timetableUpdate
+
+          when(testServer.timetableService.updateCurrentTimetable(eqTo(update.toCommand))(any())).thenReturn(Future.successful(true))
+          Put("/api/timetables/current", update) ~> route ~> check {
+            status shouldBe StatusCodes.OK
+            verify(testServer.timetableService, times(1)).updateCurrentTimetable(eqTo(update.toCommand))(any())
+            verifyNoMoreInteractions(testServer.timetableService)
+          }
+        }
+
+        it("should respond with NotModified if the timetable does not get updated") {
+          val update = rest.timetableUpdate
+
+          when(testServer.timetableService.updateCurrentTimetable(eqTo(update.toCommand))(any())).thenReturn(Future.successful(false))
+          Put("/api/timetables/current", update) ~> route ~> check {
+            status shouldBe StatusCodes.NotModified
+            verify(testServer.timetableService, times(1)).updateCurrentTimetable(eqTo(update.toCommand))(any())
+            verifyNoMoreInteractions(testServer.timetableService)
+          }
+        }
+      }
+
+      describe("getting the current timetable") {
+        it("should respond with the current timetable") {
+          when(testServer.timetableService.currentTimetable(any())).thenReturn(Future.successful(Some(domain.timetable)))
+          Get("/api/timetables/current") ~> route ~> check {
+            status shouldBe StatusCodes.OK
+            responseAs[Envelope[TimetableView]].data shouldBe rest.timetable
+            verify(testServer.timetableService, times(1)).currentTimetable(any())
+            verifyNoMoreInteractions(testServer.timetableService)
+          }
+        }
+
+        it("should respond with the appropriate error if the timetable is not found") {
+          when(testServer.timetableService.currentTimetable(any())).thenReturn(Future.successful(None))
+          Get("/api/timetables/current") ~> route ~> check {
+            status shouldBe StatusCodes.NotFound
+            verify(testServer.timetableService, times(1)).currentTimetable(any())
+            verifyNoMoreInteractions(testServer.timetableService)
+          }
+        }
+      }
+    }
   }
 }
 

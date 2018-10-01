@@ -484,7 +484,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
       it("should be able to update a timetable") {
         val server = newServer()
         when(server.repo.updateTimetable(eqTo(SD.timetableUpdate))).thenReturn(DBIOAction.successful(true))
-        whenReady(server.timetableService.updateTimetable(SD.timetableUpdate)) { result =>
+        whenReady(server.timetableService.updateCurrentTimetable(SD.timetableUpdate)) { result =>
           result shouldBe true
           verify(server.repo).updateTimetable(eqTo(SD.timetableUpdate))
           verifyNoMoreInteractions(server.repo)
