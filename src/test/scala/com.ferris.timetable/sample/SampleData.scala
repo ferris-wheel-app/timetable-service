@@ -273,7 +273,7 @@ object SampleData extends DefaultTimerComponent {
       goalId = Some(UUID.randomUUID),
       summary = "Go for a run",
       description = "Go for a run",
-      status = "planned",
+      performance = "on-track",
       createdOn = LocalDateTime.now,
       lastModified = None,
       lastPerformed = None
@@ -309,7 +309,6 @@ object SampleData extends DefaultTimerComponent {
       description = "Train in Acro-Yoga",
       frequency = "continuous",
       `type` = "active",
-      status = "planned",
       createdOn = LocalDateTime.now,
       lastModified = None,
       lastPerformed = None
