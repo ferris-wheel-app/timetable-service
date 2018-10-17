@@ -10,11 +10,6 @@ import com.ferris.timetable.service.exceptions.Exceptions._
 
 trait TimetableResponseMappings extends FerrisResponseMappings {
 
-  def mapMessage(response: Option[Message]): (Success, MessageView) = response match {
-    case Some(message) => (StatusCodes.OK, message.toView)
-    case None => throw MessageNotFoundException()
-  }
-
   def mapRoutine(response: Option[Routine]): (Success, RoutineView) = response match {
     case Some(routine) => (StatusCodes.OK, routine.toView)
     case None => throw RoutineNotFoundException()

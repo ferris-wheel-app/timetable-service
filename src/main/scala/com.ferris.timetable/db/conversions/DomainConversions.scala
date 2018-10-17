@@ -13,14 +13,6 @@ import scala.language.implicitConversions
 
 class DomainConversions(val tables: Tables) {
 
-  implicit class MessageBuilder(val row: tables.MessageRow) {
-    def asMessage: Message = Message(
-      uuid = UUID.fromString(row.uuid),
-      sender = row.sender,
-      content = row.content
-    )
-  }
-
   implicit class TimeBlockTemplateBuilder(val row: tables.TimeBlockRow) {
     def asTimeBlockTemplate: TimeBlockTemplate = TimeBlockTemplate(
       start = row.startTime.toLocalTime,

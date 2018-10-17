@@ -8,16 +8,6 @@ object Resources {
 
   object In {
 
-    case class MessageCreation (
-      sender: String,
-      content: String
-    )
-
-    case class MessageUpdate (
-      sender: Option[String],
-      content: Option[String]
-    )
-
     case class TaskTemplateCreation(
       taskId: Option[UUID],
       `type`: String
@@ -75,12 +65,6 @@ object Resources {
   }
 
   object Out {
-
-    case class MessageView (
-      uuid: UUID,
-      sender: String,
-      content: String
-    )
 
     case class TaskTemplateView (
       taskId: Option[UUID],

@@ -7,10 +7,6 @@ import com.ferris.timetable.model.Model.TaskTypes
 
 object Commands {
 
-  case class CreateMessage(sender: String, content: String)
-
-  case class UpdateMessage(sender: Option[String], content: Option[String])
-
   case class CreateTaskTemplate (
     taskId: Option[UUID],
     `type`: TaskTypes.TaskType

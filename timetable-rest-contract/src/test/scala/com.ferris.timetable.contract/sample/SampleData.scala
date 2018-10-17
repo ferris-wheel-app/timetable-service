@@ -13,22 +13,6 @@ object SampleData {
   private val later = now.plusHours(16L)
   private val today = LocalDate.now
 
-  val messageCreation = MessageCreation(
-    sender = "Dave",
-    content = "Open the pod bay doors, HAL."
-  )
-
-  val messageUpdate = MessageUpdate(
-    sender = Some("HAL"),
-    content = Some("Sorry Dave. I'm afraid I cannot do that.")
-  )
-
-  val message = MessageView(
-    uuid = UUID.randomUUID,
-    sender = "Dave",
-    content = "Open the pod bay doors, HAL."
-  )
-
   val taskTemplateCreation = TaskTemplateCreation(
     taskId = None,
     `type` = "laser_donut"

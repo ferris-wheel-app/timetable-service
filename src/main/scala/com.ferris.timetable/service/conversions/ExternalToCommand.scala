@@ -10,20 +10,6 @@ object ExternalToCommand {
     def toCommand: T
   }
 
-  implicit class MessageCreationConversion(message: MessageCreation) extends CommandConversion[CreateMessage] {
-    override def toCommand = CreateMessage(
-      sender = message.sender,
-      content = message.content
-    )
-  }
-
-  implicit class MessageUpdateConversion(message: MessageUpdate) extends CommandConversion[UpdateMessage] {
-    override def toCommand = UpdateMessage(
-      sender = message.sender,
-      content = message.content
-    )
-  }
-
   implicit class TaskRecordConversion(taskRecord: TaskTemplateCreation) extends CommandConversion[CreateTaskTemplate] {
     override def toCommand = CreateTaskTemplate(
       taskId = taskRecord.taskId,

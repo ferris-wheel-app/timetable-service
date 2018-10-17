@@ -25,18 +25,6 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Tim
   private val generatePathSegment = "generate"
   private val startPathSegment = "start"
 
-  private val createMessageRoute = pathPrefix(messagesPathSegment) {
-    pathEndOrSingleSlash {
-      post {
-        entity(as[MessageCreation]) { creation =>
-          onSuccess(timetableService.createMessage(creation.toCommand)) { response =>
-            complete(StatusCodes.OK, response.toView)
-          }
-        }
-      }
-    }
-  }
-
   private val createRoutine = pathPrefix(routinesPathSegment) {
     pathEndOrSingleSlash {
       post {
@@ -54,18 +42,6 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Tim
       post {
         onSuccess(timetableService.generateTimetable) { response =>
           complete(StatusCodes.OK, response)
-        }
-      }
-    }
-  }
-
-  private val updateMessageRoute = pathPrefix(messagesPathSegment / PathMatchers.JavaUUID) { id =>
-    pathEndOrSingleSlash {
-      put {
-        entity(as[MessageUpdate]) { update =>
-          onSuccess(timetableService.updateMessage(id, update.toCommand)) { response =>
-            complete(StatusCodes.OK, response.toView)
-          }
         }
       }
     }
@@ -99,30 +75,12 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Tim
     }
   }
 
-  private val getMessagesRoute = pathPrefix(messagesPathSegment) {
-    pathEndOrSingleSlash {
-      get {
-        onSuccess(timetableService.getMessages) { response =>
-          complete(StatusCodes.OK, response.map(_.toView))
-        }
-      }
-    }
-  }
-
   private val getRoutinesRoute = pathPrefix(routinesPathSegment) {
     pathEndOrSingleSlash {
       get {
         onSuccess(timetableService.getRoutines) { response =>
           complete(StatusCodes.OK, response.map(_.toView))
         }
-      }
-    }
-  }
-
-  private val getMessageRoute = pathPrefix(messagesPathSegment / PathMatchers.JavaUUID) { id =>
-    pathEndOrSingleSlash {
-      get {
-        onSuccess(timetableService.getMessage(id))(outcome => complete(mapMessage(outcome)))
       }
     }
   }
@@ -143,14 +101,6 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Tim
     }
   }
 
-  private val deleteMessageRoute = pathPrefix(messagesPathSegment / PathMatchers.JavaUUID) { id =>
-    pathEndOrSingleSlash {
-      delete {
-        onSuccess(timetableService.deleteMessage(id))(outcome => complete(mapDeletion(outcome)))
-      }
-    }
-  }
-
   private val deleteRoutineRoute = pathPrefix(routinesPathSegment / PathMatchers.JavaUUID) { id =>
     pathEndOrSingleSlash {
       delete {
@@ -160,19 +110,14 @@ trait TimetableRoute extends FerrisDirectives with TimetableRestFormats with Tim
   }
 
   val timetableRoute: Route = {
-    createMessageRoute ~
     createRoutine ~
     generateTimetable ~
-    updateMessageRoute ~
     updateRoutineRoute ~
     startRoutineRoute ~
     updateCurrentTimetableRoute ~
-    getMessagesRoute ~
-    getMessageRoute ~
     getRoutinesRoute ~
     getRoutineRoute ~
     currentTimetable ~
-    deleteMessageRoute ~
     deleteRoutineRoute
   }
 }

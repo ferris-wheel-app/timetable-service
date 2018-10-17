@@ -8,7 +8,7 @@ import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.db.DatabaseComponent
 import com.ferris.timetable.db.conversions.DomainConversions
 import com.ferris.timetable.model.Model._
-import com.ferris.timetable.service.exceptions.Exceptions.{MessageNotFoundException, RoutineNotFoundException}
+import com.ferris.timetable.service.exceptions.Exceptions.RoutineNotFoundException
 import com.ferris.utils.FerrisImplicits._
 import com.ferris.utils.TimerComponent
 import com.rms.miu.slickcats.DBIOInstances._
@@ -22,24 +22,19 @@ trait TimetableRepositoryComponent {
   val repo: TimetableRepository
 
   trait TimetableRepository {
-    def createMessage(message: CreateMessage): DBIO[Message]
     def createRoutine(routine: CreateRoutine): DBIO[Routine]
     def createTimetable(timetable: CreateTimetable): DBIO[Timetable]
 
-    def updateMessage(uuid: UUID, update: UpdateMessage): DBIO[Message]
     def updateRoutine(uuid: UUID, update: UpdateRoutine): DBIO[Boolean]
     def startRoutine(uuid: UUID): DBIO[Boolean]
     def updateTimetable(update: UpdateTimetable): DBIO[Boolean]
 
-    def getMessages: DBIO[Seq[Message]]
     def getRoutines: DBIO[Seq[Routine]]
 
-    def getMessage(uuid: UUID): DBIO[Option[Message]]
     def getRoutine(uuid: UUID): DBIO[Option[Routine]]
     def currentTemplate: DBIO[Option[TimetableTemplate]]
     def currentTimetable: DBIO[Option[Timetable]]
 
-    def deleteMessage(uuid: UUID): DBIO[Boolean]
     def deleteRoutine(uuid: UUID): DBIO[Boolean]
   }
 }
@@ -58,17 +53,6 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
   class SqlTimetableRepository extends TimetableRepository {
 
     // Create endpoints
-    override def createMessage(message: CreateMessage): DBIO[Message] = {
-      val row = MessageRow(
-        id = 0L,
-        uuid = UUID.randomUUID,
-        sender = message.sender,
-        content = message.content
-      )
-      val action = (MessageTable returning MessageTable.map(_.id) into ((message, id) => message.copy(id = id))) += row
-      action.map(_.asMessage)
-    }
-
     override def createRoutine(routine: CreateRoutine): DBIO[Routine] = {
       (for {
         routineRow <- insertRoutine(routine)
@@ -112,16 +96,6 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
     }
 
     // Update endpoints
-    override def updateMessage(uuid: UUID, update: UpdateMessage): DBIO[Message] = {
-      val query = messageByUuid(uuid).map(message => (message.sender, message.content))
-      getMessage(uuid).flatMap { maybeObj =>
-        maybeObj map { old =>
-          query.update(update.sender.getOrElse(old.sender), update.content.getOrElse(old.content))
-            .andThen(getMessage(uuid).map(_.head))
-        } getOrElse DBIO.failed(MessageNotFoundException())
-      }.transactionally
-    }
-
     override def updateRoutine(uuid: UUID, update: UpdateRoutine): DBIO[Boolean] = {
       val query = routineByUuid(uuid).map(routine => routine.name)
       val existingRoutine = routineByUuid(uuid).result.headOption
@@ -160,14 +134,6 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
     }
 
     // Get endpoints
-    override def getMessages: DBIO[Seq[Message]] = {
-      MessageTable.result.map(_.map(_.asMessage))
-    }
-
-    override def getMessage(uuid: UUID): DBIO[Option[Message]] = {
-      messageByUuid(uuid).result.headOption.map(_.map(_.asMessage))
-    }
-
     override def getRoutines: DBIO[Seq[Routine]] = {
       (for {
         routineRows <- RoutineTable.result
@@ -223,10 +189,6 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
     }
 
     // Delete endpoints
-    override def deleteMessage(uuid: UUID): DBIO[Boolean] = {
-      messageByUuid(uuid).delete.map(_ > 0)
-    }
-
     override def deleteRoutine(uuid: UUID): DBIO[Boolean] = {
       def deleteActualRoutine(routineId: Long): DBIO[Boolean] = {
         RoutineTable.filter(_.id === routineId).delete.map(_ > 0)

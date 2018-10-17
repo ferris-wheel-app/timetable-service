@@ -6,16 +6,6 @@ import com.ferris.timetable.model.Model._
 
 object ModelToView {
 
-  implicit class MessageConversion(message: Message) {
-    def toView: MessageView = {
-      MessageView(
-        uuid = message.uuid,
-        sender = message.sender,
-        content = message.content
-      )
-    }
-  }
-
   implicit class TimeBlockTemplateConversion(timeBlock: TimeBlockTemplate) {
     def toView: TimeBlockTemplateView = TimeBlockTemplateView(
       start = timeBlock.start,

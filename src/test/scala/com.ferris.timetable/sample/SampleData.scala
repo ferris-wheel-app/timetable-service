@@ -17,22 +17,6 @@ object SampleData extends DefaultTimerComponent {
   private val today = LocalDate.now
 
   object domain {
-    val messageCreation = CreateMessage(
-      sender = "Dave",
-      content = "Open the pod bay doors, HAL."
-    )
-
-    val messageUpdate = UpdateMessage(
-      sender = Some("HAL"),
-      content = Some("Sorry Dave. I'm afraid I cannot do that.")
-    )
-
-    val message = Message(
-      uuid = UUID.randomUUID,
-      sender = "Dave",
-      content = "Open the pod bay doors, HAL."
-    )
-
     val taskTemplateCreation = CreateTaskTemplate(
       taskId = None,
       `type` = TaskTypes.LaserDonut
@@ -151,22 +135,6 @@ object SampleData extends DefaultTimerComponent {
 
   object rest {
     import com.ferris.timetable.service.conversions.TypeResolvers._
-
-    val messageCreation = MessageCreation(
-      sender = domain.messageCreation.sender,
-      content = domain.messageCreation.content
-    )
-
-    val messageUpdate = MessageUpdate(
-      sender = domain.messageUpdate.sender,
-      content = domain.messageUpdate.content
-    )
-
-    val message = MessageView(
-      uuid = domain.message.uuid,
-      sender = domain.message.sender,
-      content = domain.message.content
-    )
 
     val taskTemplateCreation = TaskTemplateCreation(
       taskId = domain.taskTemplateCreation.taskId,
