@@ -19,6 +19,8 @@ object TypeResolvers {
       case `weave` => TaskTypes.Weave
       case `laserDonut` => TaskTypes.LaserDonut
       case `hobby` => TaskTypes.Hobby
+      case `oneOff` => TaskTypes.OneOff
+      case `scheduledOneOff` => TaskTypes.ScheduledOneOff
       case o => throw new IllegalArgumentException(s"Invalid task type: $o")
     }
 
@@ -27,6 +29,8 @@ object TypeResolvers {
       case TaskTypes.Weave => weave
       case TaskTypes.LaserDonut => laserDonut
       case TaskTypes.Hobby => hobby
+      case TaskTypes.OneOff => oneOff
+      case TaskTypes.ScheduledOneOff => scheduledOneOff
       case o => throw new IllegalArgumentException(s"Invalid task type: $o")
     }
   }

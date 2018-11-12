@@ -1,12 +1,3 @@
-create table message (
-  id BIGINT NOT NULL AUTO_INCREMENT,
-  uuid VARCHAR(36) NOT NULL,
-  sender VARCHAR(256) NOT NULL,
-  content VARCHAR(2000) NOT NULL,
-  PRIMARY KEY (id),
-  UNIQUE KEY (uuid)
-) ENGINE=InnoDB;
-
 create table routine (
   id BIGINT NOT NULL AUTO_INCREMENT,
   uuid VARCHAR(36) NOT NULL,
@@ -20,7 +11,7 @@ create table time_block (
   id BIGINT NOT NULL AUTO_INCREMENT,
   start_time TIME NOT NULL,
   finish_time TIME NOT NULL,
-  task_type VARCHAR(36) NOT NULL check (task_type in ('THREAD', 'WEAVE', 'LASER_DONUT', 'HOBBY')),
+  task_type VARCHAR(36) NOT NULL check (task_type in ('THREAD', 'WEAVE', 'LASER_DONUT', 'HOBBY', 'ONE_OFF', 'SCHEDULED_ONE_OFF')),
   task_id VARCHAR(36),
   PRIMARY KEY (id)
 ) ENGINE=InnoDB;
@@ -40,7 +31,7 @@ create table scheduled_time_block (
   date DATE NOT NULL,
   start_time TIME NOT NULL,
   finish_time TIME NOT NULL,
-  task_type VARCHAR(36) NOT NULL check (task_type in ('THREAD', 'WEAVE', 'LASER_DONUT', 'HOBBY')),
+  task_type VARCHAR(36) NOT NULL check (task_type in ('THREAD', 'WEAVE', 'LASER_DONUT', 'HOBBY', 'ONE_OFF', 'SCHEDULED_ONE_OFF')),
   task_id VARCHAR(36) NOT NULL,
   is_done TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (id)

@@ -272,10 +272,6 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
     }
 
     // Queries
-    private def messageByUuid(uuid: UUID) = {
-      MessageTable.filter(_.uuid === uuid.toString)
-    }
-
     private def routineByUuid(uuid: UUID) = {
       RoutineTable.filter(_.uuid === uuid.toString)
     }

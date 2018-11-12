@@ -7,6 +7,8 @@ object TypeFields {
     val weave = "weave"
     val laserDonut = "laser_donut"
     val hobby = "hobby"
-    val values = Set(thread, weave, laserDonut, hobby)
+    val oneOff = "oneOff"
+    val scheduledOneOff = "scheduledOneOff"
+    val values = Set(thread, weave, laserDonut, hobby, oneOff, scheduledOneOff)
   }
 }

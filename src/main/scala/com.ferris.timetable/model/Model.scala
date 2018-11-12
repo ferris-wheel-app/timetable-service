@@ -135,5 +135,13 @@ object Model {
     case object Hobby extends TaskType {
       override val dbValue = "HOBBY"
     }
+
+    case object OneOff extends TaskType {
+      override val dbValue = "ONE_OFF"
+    }
+
+    case object ScheduledOneOff extends TaskType {
+      override val dbValue = "SCHEDULED_ONE_OFF"
+    }
   }
 }
