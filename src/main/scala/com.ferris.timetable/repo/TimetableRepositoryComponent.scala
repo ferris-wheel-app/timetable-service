@@ -9,6 +9,7 @@ import com.ferris.timetable.db.DatabaseComponent
 import com.ferris.timetable.db.conversions.DomainConversions
 import com.ferris.timetable.model.Model._
 import com.ferris.timetable.service.exceptions.Exceptions.RoutineNotFoundException
+import com.ferris.timetable.utils.TimetableUtils
 import com.ferris.utils.FerrisImplicits._
 import com.ferris.utils.TimerComponent
 import com.rms.miu.slickcats.DBIOInstances._
@@ -50,7 +51,7 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
   implicit val repoEc: ExecutionContext
   override val repo = new SqlTimetableRepository
 
-  class SqlTimetableRepository extends TimetableRepository {
+  class SqlTimetableRepository extends TimetableRepository with TimetableUtils {
 
     // Create endpoints
     override def createRoutine(routine: CreateRoutine): DBIO[Routine] = {
@@ -166,19 +167,9 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
     }
 
     override def currentTemplate: DBIO[Option[TimetableTemplate]] = {
-      def today: DayOfTheWeek = timer.today.getDayOfWeek match {
-        case DayOfWeek.MONDAY => DayOfTheWeek.Monday
-        case DayOfWeek.TUESDAY => DayOfTheWeek.Tuesday
-        case DayOfWeek.WEDNESDAY => DayOfTheWeek.Wednesday
-        case DayOfWeek.THURSDAY => DayOfTheWeek.Thursday
-        case DayOfWeek.FRIDAY => DayOfTheWeek.Friday
-        case DayOfWeek.SATURDAY => DayOfTheWeek.Saturday
-        case DayOfWeek.SUNDAY => DayOfTheWeek.Sunday
-      }
-
       (for {
         currentRoutine <- OptionT[DBIO, RoutineRow](RoutineTable.filter(row => row.isCurrent === (1: Byte)).result.headOption)
-        currentTemplate <- OptionT.liftF(getWeeklyTemplate(currentRoutine.id, today))
+        currentTemplate <- OptionT.liftF(getWeeklyTemplate(currentRoutine.id, dayOfTheWeek))
       } yield currentTemplate.asTimetableTemplate).value.transactionally
     }
 

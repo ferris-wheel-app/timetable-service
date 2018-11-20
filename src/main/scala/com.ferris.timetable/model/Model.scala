@@ -1,6 +1,6 @@
 package com.ferris.timetable.model
 
-import java.time.{LocalDate, LocalTime}
+import java.time.{Duration, LocalDate, LocalTime}
 import java.util.UUID
 
 object Model {
@@ -14,7 +14,11 @@ object Model {
     start: LocalTime,
     finish: LocalTime,
     task: TaskTemplate
-  )
+  ) {
+    def durationInMillis: Long = {
+      Duration.between(start, finish).toMillis
+    }
+  }
 
   case class TimetableTemplate (
     blocks: Seq[TimeBlockTemplate]

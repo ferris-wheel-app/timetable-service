@@ -5,6 +5,7 @@ import java.util.UUID
 import cats.data.EitherT
 import cats.implicits._
 import com.ferris.planning.PlanningServiceComponent
+import com.ferris.planning.contract.resource.Resources.Out.OneOffView
 import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.contract.resource.Resources.Out._
 import com.ferris.timetable.db.DatabaseComponent
@@ -12,6 +13,7 @@ import com.ferris.timetable.model.Model._
 import com.ferris.timetable.repo.TimetableRepositoryComponent
 import com.ferris.timetable.service.conversions.ModelToView._
 import com.ferris.timetable.service.exceptions.Exceptions.{CurrentTemplateNotFoundException, InvalidTimetableException, TimetableServiceException}
+import com.ferris.timetable.utils.TimetableUtils
 import com.ferris.utils.TimerComponent
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -41,7 +43,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
 
   override val timetableService = new DefaultTimetableService(DefaultTimetableConfig.apply)
 
-  class DefaultTimetableService(timetableConfig: TimetableConfig) extends TimetableService {
+  class DefaultTimetableService(timetableConfig: TimetableConfig) extends TimetableService with TimetableUtils {
 
     override def createRoutine(routine: CreateRoutine)(implicit ex: ExecutionContext): Future[Routine] = {
       db.run(repo.createRoutine(routine))
@@ -60,6 +62,26 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
             }
           case otherBlock => Future.successful(otherBlock)
         }
+      }
+
+      def fillOneOffSlots(blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]) = (blocks, oneOffs) match {
+        case (Nil, Nil) => Future.successful(blocks)
+        case (Nil, event :: _) => Future.failed(InvalidTimetableException(s"there needs to be a one-off slot of ${getDurationHms(event.estimate)}"))
+        case (slot :: _, event :: _) if slot.durationInMillis < event.estimate =>
+          Future.failed(InvalidTimetableException(s"there needs to be a one-off slot of ${getDurationHms(event.estimate)}"))
+        case ()
+      }
+
+      def handleOneOffs(blocks: Seq[TimeBlockTemplate]) = {
+        import com.ferris.planning.contract.resource.TypeFields.Status
+
+        if(List(DayOfTheWeek.Saturday, DayOfTheWeek.Sunday).contains(dayOfTheWeek)) {
+          for {
+            oneOffs <- planningService.oneOffs
+            relevantOneOffs = oneOffs.filter(oneOff => List(Status.inProgress, Status.planned).contains(oneOff.status))
+            _ <-
+          } yield ()
+        } else Future.successful(blocks)
       }
 
       def insertBuffers(timetable: Timetable) = {
