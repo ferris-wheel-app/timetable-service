@@ -16,7 +16,7 @@ object Model {
     task: TaskTemplate
   ) {
     def durationInMillis: Long = {
-      Duration.between(start, finish).toMillis
+      Duration.between(start, finish).toNanos
     }
   }
 

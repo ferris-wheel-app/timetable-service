@@ -41,7 +41,7 @@ trait TimetableRepositoryComponent {
 }
 
 trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
-  this: DatabaseComponent with TimerComponent =>
+  this: DatabaseComponent with TimerComponent with TimetableUtils =>
 
   lazy val tableConversions = new DomainConversions(tables)
   import tableConversions.tables._
@@ -51,7 +51,7 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
   implicit val repoEc: ExecutionContext
   override val repo = new SqlTimetableRepository
 
-  class SqlTimetableRepository extends TimetableRepository with TimetableUtils {
+  class SqlTimetableRepository extends TimetableRepository {
 
     // Create endpoints
     override def createRoutine(routine: CreateRoutine): DBIO[Routine] = {

@@ -19,7 +19,7 @@ trait TimetableUtils extends TimerComponent {
 
   def getDurationHms(millis: Long): String = {
     String.format("%02d:%02d",
-      TimeUnit.MILLISECONDS.toHours(millis),
-      TimeUnit.MILLISECONDS.toMinutes(millis) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(millis)))
+      TimeUnit.MILLISECONDS.toHours(millis).asInstanceOf[java.lang.Object],
+      (TimeUnit.MILLISECONDS.toMinutes(millis) - TimeUnit.HOURS.toMinutes(TimeUnit.MILLISECONDS.toHours(millis))).asInstanceOf[java.lang.Object])
   }
 }

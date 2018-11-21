@@ -11,6 +11,7 @@ import com.ferris.planning.server.PlanningServer
 import com.ferris.timetable.db.{DatabaseComponent, MySQLTablesComponent}
 import com.ferris.timetable.repo.SqlTimetableRepositoryComponent
 import com.ferris.timetable.service.DefaultTimetableServiceComponent
+import com.ferris.timetable.utils.TimetableUtils
 import com.ferris.utils.DefaultTimerComponent
 import com.typesafe.config.ConfigFactory
 
@@ -21,6 +22,7 @@ object TimetableMicroService extends TimetableServer
   with MySQLTablesComponent
   with DefaultTimerComponent
   with PlanningServiceComponent
+  with TimetableUtils
   with App {
   override implicit lazy val system = ActorSystem()
   override implicit lazy val executor = system.dispatcher

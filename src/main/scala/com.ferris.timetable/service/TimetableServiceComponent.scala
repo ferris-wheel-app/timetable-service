@@ -39,11 +39,11 @@ trait TimetableServiceComponent {
 }
 
 trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
-  this: TimetableRepositoryComponent with DatabaseComponent with TimerComponent with PlanningServiceComponent =>
+  this: TimetableRepositoryComponent with DatabaseComponent with TimerComponent with PlanningServiceComponent with TimetableUtils =>
 
   override val timetableService = new DefaultTimetableService(DefaultTimetableConfig.apply)
 
-  class DefaultTimetableService(timetableConfig: TimetableConfig) extends TimetableService with TimetableUtils {
+  class DefaultTimetableService(timetableConfig: TimetableConfig) extends TimetableService {
 
     override def createRoutine(routine: CreateRoutine)(implicit ex: ExecutionContext): Future[Routine] = {
       db.run(repo.createRoutine(routine))
@@ -54,7 +54,38 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         template.blocks.filterNot(_.task.`type` == TaskTypes.LaserDonut).forall(_.task.taskId.nonEmpty)
       }
 
-      def fillEmptySlots(blocks: Seq[TimeBlockTemplate]) = Future.sequence {
+      def integrateOneOffs(blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]): Seq[TimeBlockTemplate] = (blocks, oneOffs) match {
+        case (Nil, Nil) => blocks
+        case (Nil, event :: _) => throw InvalidTimetableException(s"there needs to be a one-off slot of ${getDurationHms(event.estimate)}")
+        case (slot :: slots, events) if slot.task.taskId.nonEmpty => Seq(slot) ++ integrateOneOffs(slots, events)
+        case (slot :: slots, event :: events) if slot.durationInMillis <= event.estimate =>
+          Seq(slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))) ++ integrateOneOffs(slots, events)
+        case (slot :: slots, event :: events) if slot.durationInMillis > event.estimate =>
+          val filledInFirstSlot = slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))
+          val leftOverSlot = TimeBlockTemplate(
+            start = slot.start.plusNanos(event.estimate * 1000000L),
+            finish = slot.finish,
+            task = TaskTemplate(
+              taskId = None,
+              `type` = TaskTypes.OneOff
+            )
+          )
+          Seq(filledInFirstSlot) ++ integrateOneOffs(Seq(leftOverSlot) ++ slots, events)
+        case (_, Nil) => throw InvalidTimetableException(s"no one-off slot needed, since there are no existing one-off events")
+      }
+
+      def fillOneOffSlots(blocks: Seq[TimeBlockTemplate]): Future[Seq[TimeBlockTemplate]] = {
+        import com.ferris.planning.contract.resource.TypeFields.Status
+
+        if(List(DayOfTheWeek.Saturday, DayOfTheWeek.Sunday).contains(dayOfTheWeek)) {
+          for {
+            oneOffs <- planningService.oneOffs
+            relevantOneOffs = oneOffs.filter(oneOff => List(Status.inProgress, Status.planned).contains(oneOff.status))
+          } yield integrateOneOffs(blocks, relevantOneOffs)
+        } else Future.successful(blocks)
+      }
+
+      def fillLaserDonutSlots(blocks: Seq[TimeBlockTemplate]): Future[Seq[TimeBlockTemplate]] = Future.sequence {
         blocks.collect {
           case laserBlock @ TimeBlockTemplate(_, _, TaskTemplate(None, TaskTypes.LaserDonut)) =>
             planningService.currentPortion.map { currentPortion =>
@@ -64,24 +95,11 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         }
       }
 
-      def fillOneOffSlots(blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]) = (blocks, oneOffs) match {
-        case (Nil, Nil) => Future.successful(blocks)
-        case (Nil, event :: _) => Future.failed(InvalidTimetableException(s"there needs to be a one-off slot of ${getDurationHms(event.estimate)}"))
-        case (slot :: _, event :: _) if slot.durationInMillis < event.estimate =>
-          Future.failed(InvalidTimetableException(s"there needs to be a one-off slot of ${getDurationHms(event.estimate)}"))
-        case ()
-      }
-
-      def handleOneOffs(blocks: Seq[TimeBlockTemplate]) = {
-        import com.ferris.planning.contract.resource.TypeFields.Status
-
-        if(List(DayOfTheWeek.Saturday, DayOfTheWeek.Sunday).contains(dayOfTheWeek)) {
-          for {
-            oneOffs <- planningService.oneOffs
-            relevantOneOffs = oneOffs.filter(oneOff => List(Status.inProgress, Status.planned).contains(oneOff.status))
-            _ <-
-          } yield ()
-        } else Future.successful(blocks)
+      def fillEmptySlots(blocks: Seq[TimeBlockTemplate]) = {
+        for {
+          withLaserDonuts <- fillLaserDonutSlots(blocks)
+          withOneOffs <- fillOneOffSlots(withLaserDonuts)
+        } yield withOneOffs
       }
 
       def insertBuffers(timetable: Timetable) = {
@@ -104,6 +122,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         case TaskTypes.Weave => planningService.weave(uuid).map(_.map(_.summary))
         case TaskTypes.LaserDonut => planningService.portion(uuid).map(_.map(_.summary))
         case TaskTypes.Hobby => planningService.hobby(uuid).map(_.map(_.summary))
+        case TaskTypes.OneOff => planningService.oneOff(uuid).map(_.map(_.description))
       }
 
       def taskView(task: ScheduledTask) = {
