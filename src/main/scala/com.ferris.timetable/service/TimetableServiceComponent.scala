@@ -5,7 +5,7 @@ import java.util.UUID
 import cats.data.EitherT
 import cats.implicits._
 import com.ferris.planning.PlanningServiceComponent
-import com.ferris.planning.contract.resource.Resources.Out.OneOffView
+import com.ferris.planning.contract.resource.Resources.Out.{OneOffView, ScheduledOneOffView}
 import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.contract.resource.Resources.Out._
 import com.ferris.timetable.db.DatabaseComponent
@@ -54,24 +54,37 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         template.blocks.filterNot(_.task.`type` == TaskTypes.LaserDonut).forall(_.task.taskId.nonEmpty)
       }
 
-      def integrateOneOffs(blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]): Seq[TimeBlockTemplate] = (blocks, oneOffs) match {
-        case (Nil, Nil) => blocks
-        case (Nil, event :: _) => throw InvalidTimetableException(s"there needs to be a one-off slot of ${getDurationHms(event.estimate)}")
-        case (slot :: slots, events) if slot.task.taskId.nonEmpty => Seq(slot) ++ integrateOneOffs(slots, events)
-        case (slot :: slots, event :: events) if slot.durationInMillis <= event.estimate =>
-          Seq(slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))) ++ integrateOneOffs(slots, events)
-        case (slot :: slots, event :: events) if slot.durationInMillis > event.estimate =>
-          val filledInFirstSlot = slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))
-          val leftOverSlot = TimeBlockTemplate(
-            start = slot.start.plusNanos(event.estimate * 1000000L),
-            finish = slot.finish,
-            task = TaskTemplate(
-              taskId = None,
-              `type` = TaskTypes.OneOff
+      def integrateOneOffs(blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]): Seq[TimeBlockTemplate] = {
+        (blocks, oneOffs) match {
+          case (Nil, Nil) => blocks
+          case (Nil, event :: _) => throw InvalidTimetableException(s"there needs to be a one-off slot of ${getDurationHms(event.estimate)}")
+          case (slot :: slots, events) if slot.task.taskId.nonEmpty => Seq(slot) ++ integrateOneOffs(slots, events)
+          case (slot :: slots, event :: events) if slot.durationInMillis <= event.estimate =>
+            Seq(slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))) ++ integrateOneOffs(slots, events)
+          case (slot :: slots, event :: events) if slot.durationInMillis > event.estimate =>
+            val filledInFirstSlot = slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))
+            val leftOverSlot = TimeBlockTemplate(
+              start = slot.start.plusNanos(event.estimate * 1000000L),
+              finish = slot.finish,
+              task = TaskTemplate(
+                taskId = None,
+                `type` = TaskTypes.OneOff
+              )
             )
-          )
-          Seq(filledInFirstSlot) ++ integrateOneOffs(Seq(leftOverSlot) ++ slots, events)
-        case (_, Nil) => throw InvalidTimetableException(s"no one-off slot needed, since there are no existing one-off events")
+            Seq(filledInFirstSlot) ++ integrateOneOffs(Seq(leftOverSlot) ++ slots, events)
+          case (_, Nil) => throw InvalidTimetableException(s"no one-off slot needed, since there are no existing one-off events")
+        }
+      }
+
+      def wrappingBlock(blocks: Seq[TimeBlockTemplate], scheduledOneOffs: Seq[ScheduledOneOffView]): TimeBlockTemplate = {
+        blocks.filter { block =>  }
+      }
+
+      def integrateScheduledOneOffs(blocks: Seq[TimeBlockTemplate], scheduledOneOffs: Seq[ScheduledOneOffView]): Seq[TimeBlockTemplate] = {
+        scheduledOneOffs match {
+          case Nil => blocks
+          case
+        }
       }
 
       def fillOneOffSlots(blocks: Seq[TimeBlockTemplate]): Future[Seq[TimeBlockTemplate]] = {
