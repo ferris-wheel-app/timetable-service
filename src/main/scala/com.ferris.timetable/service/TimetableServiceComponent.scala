@@ -76,14 +76,29 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         }
       }
 
-      def wrappingBlock(blocks: Seq[TimeBlockTemplate], scheduledOneOffs: Seq[ScheduledOneOffView]): TimeBlockTemplate = {
-        blocks.filter { block =>  }
+      def occursDuring(scheduledOneOff: ScheduledOneOffView, block: TimeBlockTemplate): Boolean = {
+        val scheduledEventStart = scheduledOneOff.occursOn.toLocalTime
+        val scheduledEventEnd = scheduledEventStart.plusNanos(scheduledOneOff.estimate * 1000000L)
+        (scheduledEventStart == block.start) && (scheduledEventEnd == block.finish)
+      }
+
+      def occursWithin(scheduledOneOff: ScheduledOneOffView, block: TimeBlockTemplate): Boolean = {
+        val scheduledEventStart = scheduledOneOff.occursOn.toLocalTime
+        val scheduledEventEnd = scheduledEventStart.plusNanos(scheduledOneOff.estimate * 1000000L)
+        scheduledEventStart.isAfter(block.start) && scheduledEventEnd.isBefore(block.finish)
+      }
+
+      def getSpanningBlocks(scheduledOneOff: ScheduledOneOffView, blocks: Seq[TimeBlockTemplate]): Seq[TimeBlockTemplate] = {
+        val scheduledEventStart = scheduledOneOff.occursOn.toLocalTime
+        val scheduledEventEnd = scheduledEventStart.plusNanos(scheduledOneOff.estimate * 1000000L)
+        blocks.filter { block => scheduledEventStart.isAfter(block.start) && scheduledEventStart.isBefore(block.finish) ||
+          scheduledEventEnd.isAfter(block.start) && scheduledEventEnd.isBefore(block.finish) }
       }
 
       def integrateScheduledOneOffs(blocks: Seq[TimeBlockTemplate], scheduledOneOffs: Seq[ScheduledOneOffView]): Seq[TimeBlockTemplate] = {
-        scheduledOneOffs match {
-          case Nil => blocks
-          case
+        (blocks, scheduledOneOffs) match {
+          case (_, Nil) | (Nil, _) => blocks
+          case (slot :: slots, event :: events) if
         }
       }
 
