@@ -1,5 +1,7 @@
 package com.ferris.timetable.service
 
+import java.time.LocalTime
+import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 import cats.data.EitherT
@@ -14,9 +16,11 @@ import com.ferris.timetable.repo.TimetableRepositoryComponent
 import com.ferris.timetable.service.conversions.ModelToView._
 import com.ferris.timetable.service.exceptions.Exceptions.{CurrentTemplateNotFoundException, InvalidTimetableException, TimetableServiceException}
 import com.ferris.timetable.utils.TimetableUtils
+import com.ferris.utils.FerrisImplicits._
 import com.ferris.utils.TimerComponent
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.math.abs
 
 trait TimetableServiceComponent {
   val timetableService: TimetableService
@@ -64,7 +68,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
           case (slot :: slots, event :: events) if slot.durationInMillis > event.estimate =>
             val filledInFirstSlot = slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))
             val leftOverSlot = TimeBlockTemplate(
-              start = slot.start.plusNanos(event.estimate * 1000000L),
+              start = slot.start.plus(event.estimate, ChronoUnit.MILLIS),
               finish = slot.finish,
               task = TaskTemplate(
                 taskId = None,
@@ -76,30 +80,86 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         }
       }
 
-      def occursDuring(scheduledOneOff: ScheduledOneOffView, block: TimeBlockTemplate): Boolean = {
+      def getStartAndFinish(scheduledOneOff: ScheduledOneOffView): (LocalTime, LocalTime) = {
         val scheduledEventStart = scheduledOneOff.occursOn.toLocalTime
-        val scheduledEventEnd = scheduledEventStart.plusNanos(scheduledOneOff.estimate * 1000000L)
-        (scheduledEventStart == block.start) && (scheduledEventEnd == block.finish)
+        (scheduledEventStart, scheduledEventStart.plus(scheduledOneOff.estimate, ChronoUnit.MILLIS))
+      }
+
+      def calculateGaps(scheduledOneOff: ScheduledOneOffView, block: TimeBlockTemplate): (Long, Long) = {
+        val (scheduledEventStart, scheduledEventFinish) = getStartAndFinish(scheduledOneOff)
+        (abs(block.start.toLong - scheduledEventStart.toLong), abs(block.finish.toLong - scheduledEventFinish.toLong))
+      }
+
+      def isLostCause(block: TimeBlockTemplate, scheduledChunk: Long): Boolean = {
+        ((block.durationInMillis.toDouble / scheduledChunk) * 100) <= 50
+      }
+
+      def occursBefore(scheduledOneOff: ScheduledOneOffView, block: TimeBlockTemplate): Boolean = {
+        val (_, scheduledEventFinish) = getStartAndFinish(scheduledOneOff)
+        scheduledEventFinish.isBefore(block.start)
+      }
+
+      def occursAfter(scheduledOneOff: ScheduledOneOffView, block: TimeBlockTemplate): Boolean = {
+        val (scheduledEventStart, _) = getStartAndFinish(scheduledOneOff)
+        scheduledEventStart.isAfter(block.finish)
+      }
+
+      def occursOverFirstHalf(scheduledOneOff: ScheduledOneOffView, block: TimeBlockTemplate): Boolean = {
+        val (scheduledEventStart, scheduledEventFinish) = getStartAndFinish(scheduledOneOff)
+        (scheduledEventStart.isBefore(block.start) || scheduledEventStart == block.start) &&
+          scheduledEventFinish.isBefore(block.finish)
+      }
+
+      def occursOverLastHalf(scheduledOneOff: ScheduledOneOffView, block: TimeBlockTemplate): Boolean = {
+        val (scheduledEventStart, scheduledEventFinish) = getStartAndFinish(scheduledOneOff)
+        scheduledEventStart.isAfter(block.start) &&
+          (scheduledEventFinish == block.finish || scheduledEventFinish.isAfter(block.finish))
       }
 
       def occursWithin(scheduledOneOff: ScheduledOneOffView, block: TimeBlockTemplate): Boolean = {
-        val scheduledEventStart = scheduledOneOff.occursOn.toLocalTime
-        val scheduledEventEnd = scheduledEventStart.plusNanos(scheduledOneOff.estimate * 1000000L)
-        scheduledEventStart.isAfter(block.start) && scheduledEventEnd.isBefore(block.finish)
+        val (scheduledEventStart, scheduledEventFinish) = getStartAndFinish(scheduledOneOff)
+        (scheduledEventStart == block.start) || scheduledEventStart.isAfter(block.start) &&
+          (scheduledEventFinish == block.finish || scheduledEventFinish.isBefore(block.finish))
       }
 
-      def getSpanningBlocks(scheduledOneOff: ScheduledOneOffView, blocks: Seq[TimeBlockTemplate]): Seq[TimeBlockTemplate] = {
-        val scheduledEventStart = scheduledOneOff.occursOn.toLocalTime
-        val scheduledEventEnd = scheduledEventStart.plusNanos(scheduledOneOff.estimate * 1000000L)
-        blocks.filter { block => scheduledEventStart.isAfter(block.start) && scheduledEventStart.isBefore(block.finish) ||
-          scheduledEventEnd.isAfter(block.start) && scheduledEventEnd.isBefore(block.finish) }
+      def convertToSlot(scheduledOneOff: ScheduledOneOffView, gapBefore: Long = 0L, gapAfter: Long = 0L): TimeBlockTemplate = {
+        val (eventStart, eventEnd) = getStartAndFinish(scheduledOneOff)
+        TimeBlockTemplate(
+          start = eventStart.minus(gapBefore, ChronoUnit.MILLIS),
+          finish = eventEnd.plus(gapAfter, ChronoUnit.MILLIS),
+          task = TaskTemplate(
+            taskId = Some(scheduledOneOff.uuid),
+            `type` = TaskTypes.ScheduledOneOff
+          )
+        )
       }
 
       def integrateScheduledOneOffs(blocks: Seq[TimeBlockTemplate], scheduledOneOffs: Seq[ScheduledOneOffView]): Seq[TimeBlockTemplate] = {
-        (blocks, scheduledOneOffs) match {
+        ((blocks, scheduledOneOffs) match {
           case (_, Nil) | (Nil, _) => blocks
-          case (slot :: slots, event :: events) if
-        }
+          case (slot :: slots, event :: _) if occursAfter(event, slot) => Seq(slot) ++ integrateScheduledOneOffs(slots, scheduledOneOffs)
+          case (slot :: slots, event :: events) if occursWithin(event, slot) =>
+            val (gapBefore, gapAfter) = calculateGaps(event, slot)
+            val eventSlot = convertToSlot(event, gapBefore = gapBefore, gapAfter = gapAfter)
+            Seq(eventSlot) ++ integrateScheduledOneOffs(slots, events)
+          case (slot :: slots, event :: _) if occursOverLastHalf(event, slot) =>
+            val (eventStart, _) = getStartAndFinish(event)
+            val (gapBefore, _) = calculateGaps(event, slot)
+            val eventSlots = {
+              if (isLostCause(slot, gapBefore)) Seq(convertToSlot(event, gapBefore = gapBefore))
+              else Seq(slot.copy(finish = eventStart), convertToSlot(event))
+            }
+            eventSlots ++ integrateScheduledOneOffs(slots, scheduledOneOffs)
+          case (slot :: slots, event :: events) if occursOverFirstHalf(event, slot) =>
+            val (_, eventFinish) = getStartAndFinish(event)
+            val (_, gapAfter) = calculateGaps(event, slot)
+            val eventSlots = {
+              if (isLostCause(slot, gapAfter)) Seq(convertToSlot(event, gapAfter = gapAfter))
+              else Seq(convertToSlot(event), slot.copy(start = eventFinish))
+            }
+            eventSlots ++ integrateScheduledOneOffs(slots, events)
+          case (slot :: slots, event :: events) if occursBefore(event, slot) => Seq(slot) ++ integrateScheduledOneOffs(slots, events)
+        }).distinct
       }
 
       def fillOneOffSlots(blocks: Seq[TimeBlockTemplate]): Future[Seq[TimeBlockTemplate]] = {
@@ -111,6 +171,10 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
             relevantOneOffs = oneOffs.filter(oneOff => List(Status.inProgress, Status.planned).contains(oneOff.status))
           } yield integrateOneOffs(blocks, relevantOneOffs)
         } else Future.successful(blocks)
+      }
+
+      def fillScheduledOneOffSlots(blocks: Seq[TimeBlockTemplate]): Future[Seq[TimeBlockTemplate]] = {
+        planningService.scheduledOneOffs.map(integrateScheduledOneOffs(blocks, _))
       }
 
       def fillLaserDonutSlots(blocks: Seq[TimeBlockTemplate]): Future[Seq[TimeBlockTemplate]] = Future.sequence {
@@ -127,7 +191,8 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         for {
           withLaserDonuts <- fillLaserDonutSlots(blocks)
           withOneOffs <- fillOneOffSlots(withLaserDonuts)
-        } yield withOneOffs
+          withScheduledOneOffs <- fillScheduledOneOffSlots(withOneOffs)
+        } yield withScheduledOneOffs
       }
 
       def insertBuffers(timetable: Timetable) = {
@@ -151,6 +216,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         case TaskTypes.LaserDonut => planningService.portion(uuid).map(_.map(_.summary))
         case TaskTypes.Hobby => planningService.hobby(uuid).map(_.map(_.summary))
         case TaskTypes.OneOff => planningService.oneOff(uuid).map(_.map(_.description))
+        case TaskTypes.ScheduledOneOff => planningService.scheduledOneOff(uuid).map(_.map(_.description))
       }
 
       def taskView(task: ScheduledTask) = {
