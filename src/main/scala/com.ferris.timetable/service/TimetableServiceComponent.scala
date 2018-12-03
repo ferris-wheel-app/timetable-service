@@ -174,7 +174,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
       }
 
       def fillScheduledOneOffSlots(blocks: Seq[TimeBlockTemplate]): Future[Seq[TimeBlockTemplate]] = {
-        planningService.scheduledOneOffs.map(integrateScheduledOneOffs(blocks, _))
+        planningService.scheduledOneOffs(Some(timer.today)).map(integrateScheduledOneOffs(blocks, _))
       }
 
       def fillLaserDonutSlots(blocks: Seq[TimeBlockTemplate]): Future[Seq[TimeBlockTemplate]] = Future.sequence {
