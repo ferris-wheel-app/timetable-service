@@ -106,6 +106,58 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
     }
 
     describe("generating timetables") {
+      describe("with one-offs") {
+        it("should correctly handle the absence of one-off slots and events") {
+
+        }
+
+        it("should throw an exception if there is a one-off event with no slot for it") {
+
+        }
+
+        it("should correctly handle a list of one-offs with the first one having a bigger estimate than the slot") {
+
+        }
+
+        it("should correctly handle a list of one-offs with the first one having the exact same estimate as the slot") {
+
+        }
+
+        it("should correctly handle a list of one-offs with the first one having a smaller estimate than the slot") {
+
+        }
+
+        it("should throw an exception if there is a one-off slot with no event to fill it with") {
+
+        }
+      }
+
+      describe("with scheduled one-offs") {
+        it("should correctly handle the absence of scheduled one-off slots and events") {
+
+        }
+
+        it("should correctly handle a scheduled event occurring after a block") {
+
+        }
+
+        it("should correctly handle a scheduled event occurring within a block") {
+
+        }
+
+        it("should correctly handle a scheduled event occurring over the last half of a block") {
+
+        }
+
+        it("should correctly handle a scheduled event occurring over the first half of a block") {
+
+        }
+
+        it("should correctly handle a scheduled event occurring before a block") {
+
+        }
+      }
+
       it("should throw an exception if there is no current timetable template") {
         val server = newServer()
 
@@ -162,7 +214,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         }
       }
 
-      it("should be able to generate a timetable") {
+      it("should be able to generate a timetable if all criteria are met") {
         val server = newServer()
         val today = LocalDate.now
         val startTime = LocalTime.now
@@ -400,6 +452,8 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         when(server.planningService.weave(weaveId)).thenReturn(Future.successful(Some(SampleData.rest.weave)))
         when(server.planningService.portion(currentPortion.uuid)).thenReturn(Future.successful(Some(SampleData.rest.portion.copy(summary = summary))))
         when(server.planningService.portion(portionId)).thenReturn(Future.successful(Some(SampleData.rest.portion)))
+        when(server.planningService.oneOffs).thenReturn(Future.successful(Nil))
+        when(server.planningService.scheduledOneOffs(Some(today))).thenReturn(Future.successful(Nil))
         whenReady(server.timetableService.generateTimetable) { result =>
           result shouldBe timetableView
           verify(server.repo).currentTemplate
