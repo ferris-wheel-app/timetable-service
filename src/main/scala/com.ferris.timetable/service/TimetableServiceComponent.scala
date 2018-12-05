@@ -63,9 +63,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
       }
 
       def continueIntegration(slot: TimeBlockTemplate, blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]): Seq[TimeBlockTemplate] = {
-        if (blocks.isEmpty)
-          integrateOneOffs(blocks, Nil)
-        else if (containsEmptyOneOffSlots(blocks) || oneOffs.nonEmpty)
+        if (containsEmptyOneOffSlots(blocks) && oneOffs.nonEmpty)
           Seq(slot) ++ integrateOneOffs(blocks, oneOffs)
         else
           Seq(slot) ++ blocks

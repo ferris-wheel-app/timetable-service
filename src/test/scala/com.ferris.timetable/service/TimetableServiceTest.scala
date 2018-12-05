@@ -750,7 +750,71 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         }
 
         it("should correctly handle an empty one-off slot with no event to fill it with") {
+          val thread = SD.timeBlockTemplate.copy(
+            start = startTime,
+            finish = startTime.plusHours(2),
+            task = SD.taskTemplate.copy(
+              taskId = Some(threadId),
+              `type` = TaskTypes.Thread
+            )
+          )
+          val oneOffSlot = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(2),
+            finish = startTime.plusHours(4),
+            task = SD.taskTemplate.copy(
+              taskId = None,
+              `type` = TaskTypes.OneOff
+            )
+          )
+          val weave = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(4),
+            finish = startTime.plusHours(6),
+            task = SD.taskTemplate.copy(
+              taskId = Some(weaveId),
+              `type` = TaskTypes.Weave
+            )
+          )
+          val currentTemplate = SD.timetableTemplate.copy(
+            blocks = thread :: oneOffSlot :: weave :: Nil
+          )
 
+          val createCommand = SD.timetableCreation.copy(
+            date = today,
+            blocks = SD.scheduledTimeBlockCreation.copy(
+              start = startTime,
+              finish = startTime.plusHours(2),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = threadId,
+                `type` = TaskTypes.Thread
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(2),
+              finish = startTime.plusHours(4),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = threadId,
+                `type` = TaskTypes.Thread
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(4),
+              finish = startTime.plusHours(6),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = weaveId,
+                `type` = TaskTypes.Weave
+              )
+            ) :: Nil
+          )
+
+          testSuccessfulTimetableGeneration(
+            today = today,
+            threadId = threadId,
+            weaveId = weaveId
+          )(
+            currentTemplate = currentTemplate,
+            oneOffs = Nil,
+            createCommand = createCommand
+          ){ server =>
+            verify(server.repo).createTimetable(createCommand)
+          }
         }
       }
 
