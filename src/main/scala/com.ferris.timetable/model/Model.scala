@@ -16,7 +16,7 @@ object Model {
     task: TaskTemplate
   ) {
     def durationInMillis: Long = {
-      Duration.between(start, finish).toNanos
+      Duration.between(start, finish).toMillis
     }
   }
 
@@ -146,6 +146,10 @@ object Model {
 
     case object ScheduledOneOff extends TaskType {
       override val dbValue = "SCHEDULED_ONE_OFF"
+    }
+
+    case object BonusTime extends TaskType {
+      override val dbValue = "BONUS_TIME"
     }
   }
 }

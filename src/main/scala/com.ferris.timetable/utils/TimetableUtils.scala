@@ -17,6 +17,10 @@ trait TimetableUtils extends TimerComponent {
     case DayOfWeek.SUNDAY => DayOfTheWeek.Sunday
   }
 
+  def todayIsWeekend: Boolean = {
+    List(DayOfTheWeek.Saturday, DayOfTheWeek.Sunday).contains(dayOfTheWeek)
+  }
+
   def getDurationHms(millis: Long): String = {
     String.format("%02d:%02d",
       TimeUnit.MILLISECONDS.toHours(millis).asInstanceOf[java.lang.Object],

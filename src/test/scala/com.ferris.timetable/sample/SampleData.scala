@@ -3,7 +3,7 @@ package com.ferris.timetable.sample
 import java.time.{LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
-import com.ferris.planning.contract.resource.Resources.Out.{ PortionView, ThreadView, WeaveView, HobbyView }
+import com.ferris.planning.contract.resource.Resources.Out._
 import com.ferris.timetable.contract.resource.Resources.In._
 import com.ferris.timetable.contract.resource.Resources.Out._
 import com.ferris.timetable.model.Model._
@@ -280,6 +280,30 @@ object SampleData extends DefaultTimerComponent {
       createdOn = LocalDateTime.now,
       lastModified = None,
       lastPerformed = None
+    )
+
+    val oneOff = OneOffView(
+      uuid = UUID.randomUUID,
+      goalId = Some(UUID.randomUUID),
+      description = "Get window fixed",
+      estimate = 14400000L,
+      order = 5,
+      status = "planned",
+      createdOn = LocalDateTime.now,
+      lastModified = Some(LocalDateTime.now),
+      lastPerformed = Some(LocalDateTime.now)
+    )
+
+    val scheduledOneOff = ScheduledOneOffView(
+      occursOn = LocalDateTime.now,
+      uuid = UUID.randomUUID,
+      goalId = Some(UUID.randomUUID),
+      description = "Get window fixed",
+      estimate = 14400000L,
+      status = "planned",
+      createdOn = LocalDateTime.now,
+      lastModified = Some(LocalDateTime.now),
+      lastPerformed = Some(LocalDateTime.now)
     )
   }
 }

@@ -54,17 +54,31 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
     }
 
     override def generateTimetable(implicit ex: ExecutionContext): Future[TimetableView] = {
-      def isValidTemplate(template: TimetableTemplate) = {
-        template.blocks.filterNot(_.task.`type` == TaskTypes.LaserDonut).forall(_.task.taskId.nonEmpty)
+      def hasCompulsoryFilling(template: TimetableTemplate) = {
+        template.blocks.filterNot(block => Seq(TaskTypes.LaserDonut, TaskTypes.OneOff).contains(block.task.`type`)).forall(_.task.taskId.nonEmpty)
+      }
+
+      def continueIntegration(slot: TimeBlockTemplate, blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]): Seq[TimeBlockTemplate] = {
+        if (blocks.exists(block => block.task.`type` == TaskTypes.OneOff && block.task.taskId.isEmpty))
+          Seq(slot) ++ integrateOneOffs(blocks, oneOffs)
+        else Seq(slot) ++ blocks
       }
 
       def integrateOneOffs(blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]): Seq[TimeBlockTemplate] = {
         (blocks, oneOffs) match {
           case (Nil, Nil) => blocks
+
           case (Nil, event :: _) => throw InvalidTimetableException(s"there needs to be a one-off slot of ${getDurationHms(event.estimate)}")
-          case (slot :: slots, events) if slot.task.taskId.nonEmpty => Seq(slot) ++ integrateOneOffs(slots, events)
+
+          case (slot :: _, _) if slot.task.taskId.isEmpty && slot.task.`type` != TaskTypes.OneOff =>
+            throw InvalidTimetableException(s"there is an empty non-one-off slot")
+
+          case (slot :: slots, events) if slot.task.taskId.nonEmpty => continueIntegration(slot, slots, events)
+
           case (slot :: slots, event :: events) if slot.durationInMillis <= event.estimate =>
-            Seq(slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))) ++ integrateOneOffs(slots, events)
+            val filledInSlot = slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))
+            continueIntegration(filledInSlot, slots, events)
+
           case (slot :: slots, event :: events) if slot.durationInMillis > event.estimate =>
             val filledInFirstSlot = slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))
             val leftOverSlot = TimeBlockTemplate(
@@ -75,8 +89,20 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
                 `type` = TaskTypes.OneOff
               )
             )
-            Seq(filledInFirstSlot) ++ integrateOneOffs(Seq(leftOverSlot) ++ slots, events)
-          case (_, Nil) => throw InvalidTimetableException(s"no one-off slot needed, since there are no existing one-off events")
+            continueIntegration(filledInFirstSlot, Seq(leftOverSlot) ++ slots, events)
+
+          case (slot :: slots, Nil) if slot.task.taskId.isEmpty && slot.task.`type` == TaskTypes.OneOff =>
+            val filledInSlot = TimeBlockTemplate(
+              start = slot.start,
+              finish = slot.finish,
+              task = TaskTemplate(
+                taskId = None,
+                `type` = TaskTypes.BonusTime
+              )
+            )
+            continueIntegration(filledInSlot, slots, Nil)
+
+          case (slots, Nil) => integrateOneOffs(slots, Nil)
         }
       }
 
@@ -164,13 +190,10 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
 
       def fillOneOffSlots(blocks: Seq[TimeBlockTemplate]): Future[Seq[TimeBlockTemplate]] = {
         import com.ferris.planning.contract.resource.TypeFields.Status
-
-        if(List(DayOfTheWeek.Saturday, DayOfTheWeek.Sunday).contains(dayOfTheWeek)) {
-          for {
-            oneOffs <- planningService.oneOffs
-            relevantOneOffs = oneOffs.filter(oneOff => List(Status.inProgress, Status.planned).contains(oneOff.status))
-          } yield integrateOneOffs(blocks, relevantOneOffs)
-        } else Future.successful(blocks)
+        for {
+          oneOffs <- planningService.oneOffs
+          relevantOneOffs = oneOffs.filter(oneOff => List(Status.inProgress, Status.planned).contains(oneOff.status))
+        } yield integrateOneOffs(blocks, relevantOneOffs)
       }
 
       def fillScheduledOneOffSlots(blocks: Seq[TimeBlockTemplate]): Future[Seq[TimeBlockTemplate]] = {
@@ -245,7 +268,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
 
       (for {
         currentTemplate <- EitherT.fromOptionF(db.run(repo.currentTemplate), CurrentTemplateNotFoundException())
-        _ <- EitherT.cond[Future](isValidTemplate(currentTemplate), (), InvalidTimetableException("there are time-blocks without specified tasks"))
+        _ <- EitherT.cond[Future](hasCompulsoryFilling(currentTemplate), (), InvalidTimetableException("there are time-blocks without specified tasks"))
         filledInBlocks <- fromFuture(fillEmptySlots(currentTemplate.blocks))
         generatedTimetable <- {
           val command = CreateTimetable(
