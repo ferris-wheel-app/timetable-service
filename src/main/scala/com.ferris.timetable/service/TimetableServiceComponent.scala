@@ -63,7 +63,9 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
       }
 
       def continueIntegration(slot: TimeBlockTemplate, blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]): Seq[TimeBlockTemplate] = {
-        if (containsEmptyOneOffSlots(blocks))
+        if (blocks.isEmpty)
+          integrateOneOffs(blocks, Nil)
+        else if (containsEmptyOneOffSlots(blocks) || oneOffs.nonEmpty)
           Seq(slot) ++ integrateOneOffs(blocks, oneOffs)
         else
           Seq(slot) ++ blocks
@@ -105,13 +107,13 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
             blocks
 
           case (Nil, event :: _) =>
-            throw InvalidTimetableException(s"there needs to be a one-off slot of ${getDurationHms(event.estimate)}")
+            throw InvalidTimetableException(s"there needs to be a one-off slot of${getDurationHms(event.estimate)}")
 
           case (slot :: _, _) if slot.task.taskId.isEmpty && slot.task.`type` != TaskTypes.OneOff =>
             throw InvalidTimetableException(s"there is an empty non-one-off slot")
 
           case (slot :: slots, events) if slot.task.taskId.nonEmpty =>
-            continueIntegration(slot, slots, events)
+            Seq(slot) ++ integrateOneOffs(slots, events)
 
           case (slot :: slots, event :: events) if slot.durationInMillis <= event.estimate =>
             val filledInSlot = slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))

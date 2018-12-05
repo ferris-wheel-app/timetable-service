@@ -411,7 +411,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
           ) :: Nil
         )
 
-        testTimetableGeneration(
+        testSuccessfulTimetableGeneration(
           today = today,
           threadId = threadId,
           weaveId = weaveId,
@@ -497,7 +497,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
             ) :: Nil
           )
 
-          testTimetableGeneration(
+          testFailedTimetableGeneration(
             today = today,
             threadId = threadId,
             weaveId = weaveId
@@ -505,9 +505,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
             currentTemplate = currentTemplate,
             oneOffs = oneOff1 :: oneOff2 :: Nil,
             createCommand = createCommand
-          ){ server =>
-            verify(server.repo).createTimetable(createCommand)
-          }
+          )(InvalidTimetableException("there needs to be a one-off slot of 3 hours and 0 minutes"))
         }
 
         it("should correctly handle a one-off having a bigger estimate than the slot") {
@@ -575,7 +573,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
             ) :: Nil
           )
 
-          testTimetableGeneration(
+          testSuccessfulTimetableGeneration(
             today = today,
             threadId = threadId,
             weaveId = weaveId
@@ -653,7 +651,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
             ) :: Nil
           )
 
-          testTimetableGeneration(
+          testSuccessfulTimetableGeneration(
             today = today,
             threadId = threadId,
             weaveId = weaveId
@@ -738,7 +736,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
             ) :: Nil
           )
 
-          testTimetableGeneration(
+          testSuccessfulTimetableGeneration(
             today = today,
             threadId = threadId,
             weaveId = weaveId
@@ -799,7 +797,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
     }
   }
 
-  def testTimetableGeneration(
+  private def testSuccessfulTimetableGeneration(
     today: LocalDate = LocalDate.now,
     threadId: UUID = UUID.randomUUID,
     weaveId: UUID = UUID.randomUUID,
@@ -813,6 +811,54 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
     timetableInRepo: Timetable = SD.timetable.copy(date = today, blocks = Nil),
     timetableView: TimetableView = SampleData.rest.timetable.copy(date = today, blocks = Nil))(
     verifications: Server => Unit = _ => ()
+  ): Unit = {
+    testSetup(today, threadId, weaveId, portionId, currentPortion, portionSummary)(
+      currentTemplate, oneOffs, scheduledOneOffs, createCommand, timetableInRepo, timetableView
+    ){ server =>
+      whenReady(server.timetableService.generateTimetable) { result =>
+        result shouldBe timetableView
+      }
+    }
+  }
+
+  private def testFailedTimetableGeneration(
+    today: LocalDate = LocalDate.now,
+    threadId: UUID = UUID.randomUUID,
+    weaveId: UUID = UUID.randomUUID,
+    portionId: UUID = UUID.randomUUID,
+    currentPortion: PortionView = SampleData.rest.portion,
+    portionSummary: String = "")(
+    currentTemplate: TimetableTemplate = SD.timetableTemplate.copy(blocks = Nil),
+    oneOffs: List[OneOffView] = Nil,
+    scheduledOneOffs: List[ScheduledOneOffView] = Nil,
+    createCommand: CreateTimetable = SD.timetableCreation.copy(date = today, blocks = Nil),
+    timetableInRepo: Timetable = SD.timetable.copy(date = today, blocks = Nil),
+    timetableView: TimetableView = SampleData.rest.timetable.copy(date = today, blocks = Nil))(
+    expectedException: TimetableServiceException
+  ): Unit = {
+    testSetup(today, threadId, weaveId, portionId, currentPortion, portionSummary)(
+      currentTemplate, oneOffs, scheduledOneOffs, createCommand, timetableInRepo, timetableView
+    ){ server =>
+      whenReady(server.timetableService.generateTimetable.failed) { exception =>
+        exception shouldBe expectedException
+      }
+    }
+  }
+
+  private def testSetup(
+    today: LocalDate = LocalDate.now,
+    threadId: UUID = UUID.randomUUID,
+    weaveId: UUID = UUID.randomUUID,
+    portionId: UUID = UUID.randomUUID,
+    currentPortion: PortionView = SampleData.rest.portion,
+    portionSummary: String = "")(
+    currentTemplate: TimetableTemplate = SD.timetableTemplate.copy(blocks = Nil),
+    oneOffs: List[OneOffView] = Nil,
+    scheduledOneOffs: List[ScheduledOneOffView] = Nil,
+    createCommand: CreateTimetable = SD.timetableCreation.copy(date = today, blocks = Nil),
+    timetableInRepo: Timetable = SD.timetable.copy(date = today, blocks = Nil),
+    timetableView: TimetableView = SampleData.rest.timetable.copy(date = today, blocks = Nil))(
+    payoff: Server => Unit = _ => ()
   ): Unit = {
     val server = newServer()
     when(server.repo.currentTemplate).thenReturn(DBIOAction.successful(Some(currentTemplate)))
@@ -828,9 +874,6 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
     when(server.planningService.portion(portionId)).thenReturn(Future.successful(Some(SampleData.rest.portion)))
     when(server.planningService.oneOffs).thenReturn(Future.successful(oneOffs))
     when(server.planningService.scheduledOneOffs(Some(today))).thenReturn(Future.successful(scheduledOneOffs))
-    whenReady(server.timetableService.generateTimetable) { result =>
-      result shouldBe timetableView
-      verifications
-    }
+    payoff(server)
   }
 }
