@@ -58,11 +58,45 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         template.blocks.filterNot(block => Seq(TaskTypes.LaserDonut, TaskTypes.OneOff).contains(block.task.`type`)).forall(_.task.taskId.nonEmpty)
       }
 
+      def containsEmptyOneOffSlots(blocks: Seq[TimeBlockTemplate]): Boolean = {
+        blocks.exists(block => block.task.`type` == TaskTypes.OneOff && block.task.taskId.isEmpty)
+      }
+
       def continueIntegration(slot: TimeBlockTemplate, blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]): Seq[TimeBlockTemplate] = {
-        if (blocks.exists(block => block.task.`type` == TaskTypes.OneOff && block.task.taskId.isEmpty))
+        if (containsEmptyOneOffSlots(blocks))
           Seq(slot) ++ integrateOneOffs(blocks, oneOffs)
         else
           Seq(slot) ++ blocks
+      }
+
+      def fillInOneOffGaps(blocks: Seq[TimeBlockTemplate]): Seq[TimeBlockTemplate] = {
+        if(containsEmptyOneOffSlots(blocks)) {
+          blocks match {
+            case (emptySlot :: slot :: slots)
+              if emptySlot.task.taskId.isEmpty &&
+                emptySlot.task.`type` == TaskTypes.OneOff &&
+                slot.task.taskId.nonEmpty =>
+              Seq(emptySlot.copy(
+                task = emptySlot.task.copy(
+                  taskId = slot.task.taskId,
+                  `type` = slot.task.`type`
+                )
+              )) ++ fillInOneOffGaps(slots)
+            case (slot :: emptySlot :: slots)
+              if emptySlot.task.taskId.isEmpty &&
+                emptySlot.task.`type` == TaskTypes.OneOff &&
+                slot.task.taskId.nonEmpty =>
+              Seq(
+                slot,
+                emptySlot.copy(
+                  task = emptySlot.task.copy(
+                    taskId = slot.task.taskId,
+                    `type` = slot.task.`type`
+                  )
+                )) ++ fillInOneOffGaps(slots)
+            case slot :: slots => Seq(slot) ++ fillInOneOffGaps(slots)
+          }
+        } else blocks
       }
 
       def integrateOneOffs(blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]): Seq[TimeBlockTemplate] = {
@@ -94,17 +128,6 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
               )
             )
             continueIntegration(filledInFirstSlot, Seq(leftOverSlot) ++ slots, events)
-
-          case (slot :: slots, Nil) if slot.task.taskId.isEmpty && slot.task.`type` == TaskTypes.OneOff =>
-            val filledInSlot = TimeBlockTemplate(
-              start = slot.start,
-              finish = slot.finish,
-              task = TaskTemplate(
-                taskId = None,
-                `type` = TaskTypes.BonusTime
-              )
-            )
-            continueIntegration(filledInSlot, slots, Nil)
 
           case (slots, Nil) =>
             integrateOneOffs(slots, Nil)
@@ -198,7 +221,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         for {
           oneOffs <- planningService.oneOffs
           relevantOneOffs = oneOffs.filter(oneOff => List(Status.inProgress, Status.planned).contains(oneOff.status))
-        } yield integrateOneOffs(blocks, relevantOneOffs)
+        } yield fillInOneOffGaps(integrateOneOffs(blocks, relevantOneOffs))
       }
 
       def fillScheduledOneOffSlots(blocks: Seq[TimeBlockTemplate]): Future[Seq[TimeBlockTemplate]] = {

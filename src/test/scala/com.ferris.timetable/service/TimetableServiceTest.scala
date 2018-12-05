@@ -440,6 +440,76 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         val threadId = UUID.randomUUID
         val weaveId = UUID.randomUUID
 
+        it("should throw an exception if there are one-offs but no empty slot to put them in") {
+          val thread = SD.timeBlockTemplate.copy(
+            start = startTime,
+            finish = startTime.plusHours(3),
+            task = SD.taskTemplate.copy(
+              taskId = Some(threadId),
+              `type` = TaskTypes.Thread
+            )
+          )
+          val weave = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(3),
+            finish = startTime.plusHours(6),
+            task = SD.taskTemplate.copy(
+              taskId = Some(weaveId),
+              `type` = TaskTypes.Weave
+            )
+          )
+          val currentTemplate = SD.timetableTemplate.copy(
+            blocks = thread :: weave :: Nil
+          )
+          val oneOff1 = SampleData.rest.oneOff.copy(
+            uuid = UUID.randomUUID,
+            estimate = 10800000L,
+            status = Status.planned
+          )
+          val oneOff2 = SampleData.rest.oneOff.copy(
+            uuid = UUID.randomUUID,
+            estimate = 10800000L,
+            status = Status.planned
+          )
+
+          val createCommand = SD.timetableCreation.copy(
+            date = today,
+            blocks = SD.scheduledTimeBlockCreation.copy(
+              start = startTime,
+              finish = startTime.plusHours(2),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = threadId,
+                `type` = TaskTypes.Thread
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(2),
+              finish = startTime.plusHours(4),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = oneOff1.uuid,
+                `type` = TaskTypes.OneOff
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(4),
+              finish = startTime.plusHours(6),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = weaveId,
+                `type` = TaskTypes.Weave
+              )
+            ) :: Nil
+          )
+
+          testTimetableGeneration(
+            today = today,
+            threadId = threadId,
+            weaveId = weaveId
+          )(
+            currentTemplate = currentTemplate,
+            oneOffs = oneOff1 :: oneOff2 :: Nil,
+            createCommand = createCommand
+          ){ server =>
+            verify(server.repo).createTimetable(createCommand)
+          }
+        }
+
         it("should correctly handle a one-off having a bigger estimate than the slot") {
           val thread = SD.timeBlockTemplate.copy(
             start = startTime,
@@ -513,7 +583,9 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
             currentTemplate = currentTemplate,
             oneOffs = oneOff1 :: oneOff2 :: Nil,
             createCommand = createCommand
-          )()
+          ){ server =>
+            verify(server.repo).createTimetable(createCommand)
+          }
         }
 
         it("should correctly handle a one-off having the exact same estimate as the slot") {
@@ -589,7 +661,9 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
             currentTemplate = currentTemplate,
             oneOffs = oneOff1 :: oneOff2 :: Nil,
             createCommand = createCommand
-          )()
+          ){ server =>
+            verify(server.repo).createTimetable(createCommand)
+          }
         }
 
         it("should correctly handle a one-off having a smaller estimate than the slot") {
@@ -672,10 +746,12 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
             currentTemplate = currentTemplate,
             oneOffs = oneOff1 :: oneOff2 :: Nil,
             createCommand = createCommand
-          )()
+          ){ server =>
+            verify(server.repo).createTimetable(createCommand)
+          }
         }
 
-        it("should throw an exception if there is a one-off slot with no event to fill it with") {
+        it("should correctly handle an empty one-off slot with no event to fill it with") {
 
         }
       }
