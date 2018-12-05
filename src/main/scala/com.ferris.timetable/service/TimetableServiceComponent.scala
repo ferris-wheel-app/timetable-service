@@ -197,7 +197,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
 
       def insertBuffers(timetable: Timetable) = {
         val slidingPairs = timetable.blocks.sliding(2).collect { case Seq(a, b) => (a, b) }.toSeq
-        val blocksWithBuffers = slidingPairs.foldLeft(timetable.blocks.head :: Nil) { case (aggregate, (first: ConcreteBlock, second: ConcreteBlock)) =>
+        val blocksWithBuffers = slidingPairs.foldLeft(timetable.blocks.headOption.toSeq) { case (aggregate, (first: ConcreteBlock, second: ConcreteBlock)) =>
           val bufferHalf = timetableConfig.bufferDuration / 2
           val bufferBlock = BufferBlock(
             start = first.finish.minusMinutes(bufferHalf),
