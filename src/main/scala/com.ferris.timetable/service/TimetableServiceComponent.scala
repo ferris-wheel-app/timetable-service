@@ -14,7 +14,7 @@ import com.ferris.timetable.db.DatabaseComponent
 import com.ferris.timetable.model.Model._
 import com.ferris.timetable.repo.TimetableRepositoryComponent
 import com.ferris.timetable.service.conversions.ModelToView._
-import com.ferris.timetable.service.exceptions.Exceptions.{CurrentTemplateNotFoundException, InvalidTimetableException, TimetableServiceException}
+import com.ferris.timetable.service.exceptions.Exceptions.{CurrentTemplateNotFoundException, InvalidTimetableException, TimetableServiceException, UnknownServiceError}
 import com.ferris.timetable.utils.TimetableUtils
 import com.ferris.utils.FerrisImplicits._
 import com.ferris.utils.TimerComponent
@@ -61,19 +61,23 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
       def continueIntegration(slot: TimeBlockTemplate, blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]): Seq[TimeBlockTemplate] = {
         if (blocks.exists(block => block.task.`type` == TaskTypes.OneOff && block.task.taskId.isEmpty))
           Seq(slot) ++ integrateOneOffs(blocks, oneOffs)
-        else Seq(slot) ++ blocks
+        else
+          Seq(slot) ++ blocks
       }
 
       def integrateOneOffs(blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]): Seq[TimeBlockTemplate] = {
         (blocks, oneOffs) match {
-          case (Nil, Nil) => blocks
+          case (Nil, Nil) =>
+            blocks
 
-          case (Nil, event :: _) => throw InvalidTimetableException(s"there needs to be a one-off slot of ${getDurationHms(event.estimate)}")
+          case (Nil, event :: _) =>
+            throw InvalidTimetableException(s"there needs to be a one-off slot of ${getDurationHms(event.estimate)}")
 
           case (slot :: _, _) if slot.task.taskId.isEmpty && slot.task.`type` != TaskTypes.OneOff =>
             throw InvalidTimetableException(s"there is an empty non-one-off slot")
 
-          case (slot :: slots, events) if slot.task.taskId.nonEmpty => continueIntegration(slot, slots, events)
+          case (slot :: slots, events) if slot.task.taskId.nonEmpty =>
+            continueIntegration(slot, slots, events)
 
           case (slot :: slots, event :: events) if slot.durationInMillis <= event.estimate =>
             val filledInSlot = slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))
@@ -102,7 +106,8 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
             )
             continueIntegration(filledInSlot, slots, Nil)
 
-          case (slots, Nil) => integrateOneOffs(slots, Nil)
+          case (slots, Nil) =>
+            integrateOneOffs(slots, Nil)
         }
       }
 
@@ -264,6 +269,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
       def fromFuture[T](futureResult: Future[T]): EitherT[Future, TimetableServiceException, T] =
         EitherT(futureResult.map(Right(_): Either[TimetableServiceException, T]).recover {
           case exception: TimetableServiceException => Left(exception)
+          case unknownException => Left(UnknownServiceError(message = unknownException.getStackTrace.mkString("\n")))
         })
 
       (for {

@@ -11,4 +11,6 @@ object Exceptions {
   case class TimetableNotFoundException(message: String = "timetable not found") extends TimetableServiceException(message)
 
   case class InvalidTimetableException(message: String) extends TimetableServiceException(message)
+
+  case class UnknownServiceError(message: String) extends TimetableServiceException(message)
 }

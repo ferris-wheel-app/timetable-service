@@ -8,7 +8,7 @@ import com.ferris.planning.contract.resource.Resources.Out.{OneOffView, PortionV
 import com.ferris.planning.contract.resource.TypeFields.Status
 import com.ferris.timetable.command.Commands.CreateTimetable
 import com.ferris.timetable.contract.resource.Resources.Out.TimetableView
-import com.ferris.timetable.db.{H2DatabaseComponent, H2TablesComponent}
+import com.ferris.timetable.db.{H2TablesComponent, MockDatabaseComponent}
 import com.ferris.timetable.model.Model.{TaskTypes, Timetable, TimetableTemplate}
 import com.ferris.timetable.sample.SampleData
 import com.ferris.timetable.sample.SampleData.{domain => SD}
@@ -16,7 +16,7 @@ import com.ferris.timetable.service.conversions.TypeResolvers.TaskType
 import com.ferris.timetable.service.exceptions.Exceptions._
 import com.ferris.timetable.utils.TimetableUtils
 import com.ferris.utils.MockTimerComponent
-import org.mockito.Matchers.{eq => eqTo}
+import org.mockito.Matchers.{eq => eqTo, any}
 import org.mockito.Mockito._
 import org.scalatest.{FunSpec, Matchers}
 import org.scalatest.concurrent.ScalaFutures
@@ -33,7 +33,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
   type Server = DefaultTimetableServiceComponent
     with MockTimetableRepositoryComponent
     with H2TablesComponent
-    with H2DatabaseComponent
+    with MockDatabaseComponent
     with MockTimerComponent
     with MockPlanningServiceComponent
     with TimetableUtils
@@ -41,7 +41,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
   def newServer(bufferDuration: Int = 10) = new DefaultTimetableServiceComponent
     with MockTimetableRepositoryComponent
     with H2TablesComponent
-    with H2DatabaseComponent
+    with MockDatabaseComponent
     with MockTimerComponent
     with MockPlanningServiceComponent
     with TimetableUtils {
@@ -54,6 +54,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
       it("should be able to create a routine") {
         val server = newServer()
         when(server.repo.createRoutine(SD.routineCreation)).thenReturn(DBIOAction.successful(SD.routine))
+        when(server.db.run(DBIOAction.successful(SD.routine))).thenReturn(Future.successful(SD.routine))
         whenReady(server.timetableService.createRoutine(SD.routineCreation)) { result =>
           result shouldBe SD.routine
           verify(server.repo, times(1)).createRoutine(SD.routineCreation)
@@ -65,6 +66,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         val server = newServer()
         val id = UUID.randomUUID
         when(server.repo.updateRoutine(eqTo(id), eqTo(SD.routineUpdate))).thenReturn(DBIOAction.successful(true))
+        when(server.db.run(DBIOAction.successful(true))).thenReturn(Future.successful(true))
         whenReady(server.timetableService.updateRoutine(id, SD.routineUpdate)) { result =>
           result shouldBe true
           verify(server.repo, times(1)).updateRoutine(eqTo(id), eqTo(SD.routineUpdate))
@@ -76,6 +78,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         val server = newServer()
         val id = UUID.randomUUID
         when(server.repo.startRoutine(eqTo(id))).thenReturn(DBIOAction.successful(true))
+        when(server.db.run(DBIOAction.successful(true))).thenReturn(Future.successful(true))
         whenReady(server.timetableService.startRoutine(id)) { result =>
           result shouldBe true
           verify(server.repo, times(1)).startRoutine(eqTo(id))
@@ -87,6 +90,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         val server = newServer()
         val id = UUID.randomUUID
         when(server.repo.getRoutine(id)).thenReturn(DBIOAction.successful(Some(SD.routine)))
+        when(server.db.run(DBIOAction.successful(Some(SD.routine)))).thenReturn(Future.successful(Some(SD.routine)))
         whenReady(server.timetableService.getRoutine(id)) { result =>
           result shouldBe Some(SD.routine)
           verify(server.repo, times(1)).getRoutine(id)
@@ -98,6 +102,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         val server = newServer()
         val routines = Seq(SD.routine, SD.routine.copy(uuid = UUID.randomUUID))
         when(server.repo.getRoutines).thenReturn(DBIOAction.successful(routines))
+        when(server.db.run(DBIOAction.successful(routines))).thenReturn(Future.successful(routines))
         whenReady(server.timetableService.getRoutines) { result =>
           result shouldBe routines
           verify(server.repo, times(1)).getRoutines
@@ -109,6 +114,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         val server = newServer()
         val id = UUID.randomUUID
         when(server.repo.deleteRoutine(id)).thenReturn(DBIOAction.successful(true))
+        when(server.db.run(DBIOAction.successful(true))).thenReturn(Future.successful(true))
         whenReady(server.timetableService.deleteRoutine(id)) { result =>
           result shouldBe true
           verify(server.repo, times(1)).deleteRoutine(id)
@@ -122,6 +128,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         val server = newServer()
 
         when(server.repo.currentTemplate).thenReturn(DBIOAction.successful(None))
+        when(server.db.run(DBIOAction.successful(None))).thenReturn(Future.successful(None))
         whenReady(server.timetableService.generateTimetable.failed) { exception =>
           exception shouldBe CurrentTemplateNotFoundException()
           verify(server.repo).currentTemplate
@@ -166,6 +173,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         )
 
         when(server.repo.currentTemplate).thenReturn(DBIOAction.successful(Some(currentTemplate)))
+        when(server.db.run(DBIOAction.successful(Some(currentTemplate)))).thenReturn(Future.successful(Some(currentTemplate)))
         whenReady(server.timetableService.generateTimetable.failed) { exception =>
           exception shouldBe InvalidTimetableException("there are time-blocks without specified tasks")
           verify(server.repo).currentTemplate
@@ -427,12 +435,12 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
       }
 
       describe("with one-offs") {
-        it("should correctly handle a one-off having a bigger estimate than the slot") {
-          val today = LocalDate.now
-          val startTime = LocalTime.now
-          val threadId = UUID.randomUUID
-          val weaveId = UUID.randomUUID
+        val today = LocalDate.now
+        val startTime = LocalTime.of(9, 30)
+        val threadId = UUID.randomUUID
+        val weaveId = UUID.randomUUID
 
+        it("should correctly handle a one-off having a bigger estimate than the slot") {
           val thread = SD.timeBlockTemplate.copy(
             start = startTime,
             finish = startTime.plusHours(2),
@@ -509,11 +517,162 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         }
 
         it("should correctly handle a one-off having the exact same estimate as the slot") {
+          val thread = SD.timeBlockTemplate.copy(
+            start = startTime,
+            finish = startTime.plusHours(2),
+            task = SD.taskTemplate.copy(
+              taskId = Some(threadId),
+              `type` = TaskTypes.Thread
+            )
+          )
+          val oneOffSlot = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(2),
+            finish = startTime.plusHours(4),
+            task = SD.taskTemplate.copy(
+              taskId = None,
+              `type` = TaskTypes.OneOff
+            )
+          )
+          val weave = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(4),
+            finish = startTime.plusHours(6),
+            task = SD.taskTemplate.copy(
+              taskId = Some(weaveId),
+              `type` = TaskTypes.Weave
+            )
+          )
+          val currentTemplate = SD.timetableTemplate.copy(
+            blocks = thread :: oneOffSlot :: weave :: Nil
+          )
+          val oneOff1 = SampleData.rest.oneOff.copy(
+            uuid = UUID.randomUUID,
+            estimate = 7200000L,
+            status = Status.planned
+          )
+          val oneOff2 = SampleData.rest.oneOff.copy(
+            uuid = UUID.randomUUID,
+            estimate = 10800000L,
+            status = Status.planned
+          )
 
+          val createCommand = SD.timetableCreation.copy(
+            date = today,
+            blocks = SD.scheduledTimeBlockCreation.copy(
+              start = startTime,
+              finish = startTime.plusHours(2),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = threadId,
+                `type` = TaskTypes.Thread
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(2),
+              finish = startTime.plusHours(4),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = oneOff1.uuid,
+                `type` = TaskTypes.OneOff
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(4),
+              finish = startTime.plusHours(6),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = weaveId,
+                `type` = TaskTypes.Weave
+              )
+            ) :: Nil
+          )
+
+          testTimetableGeneration(
+            today = today,
+            threadId = threadId,
+            weaveId = weaveId
+          )(
+            currentTemplate = currentTemplate,
+            oneOffs = oneOff1 :: oneOff2 :: Nil,
+            createCommand = createCommand
+          )()
         }
 
         it("should correctly handle a one-off having a smaller estimate than the slot") {
+          val thread = SD.timeBlockTemplate.copy(
+            start = startTime,
+            finish = startTime.plusHours(2),
+            task = SD.taskTemplate.copy(
+              taskId = Some(threadId),
+              `type` = TaskTypes.Thread
+            )
+          )
+          val oneOffSlot = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(2),
+            finish = startTime.plusHours(4),
+            task = SD.taskTemplate.copy(
+              taskId = None,
+              `type` = TaskTypes.OneOff
+            )
+          )
+          val weave = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(4),
+            finish = startTime.plusHours(6),
+            task = SD.taskTemplate.copy(
+              taskId = Some(weaveId),
+              `type` = TaskTypes.Weave
+            )
+          )
+          val currentTemplate = SD.timetableTemplate.copy(
+            blocks = thread :: oneOffSlot :: weave :: Nil
+          )
+          val oneOff1 = SampleData.rest.oneOff.copy(
+            uuid = UUID.randomUUID,
+            estimate = 3600000L,
+            status = Status.planned
+          )
+          val oneOff2 = SampleData.rest.oneOff.copy(
+            uuid = UUID.randomUUID,
+            estimate = 10800000L,
+            status = Status.planned
+          )
 
+          val createCommand = SD.timetableCreation.copy(
+            date = today,
+            blocks = SD.scheduledTimeBlockCreation.copy(
+              start = startTime,
+              finish = startTime.plusHours(2),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = threadId,
+                `type` = TaskTypes.Thread
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(2),
+              finish = startTime.plusHours(3),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = oneOff1.uuid,
+                `type` = TaskTypes.OneOff
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(3),
+              finish = startTime.plusHours(4),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = oneOff2.uuid,
+                `type` = TaskTypes.OneOff
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(4),
+              finish = startTime.plusHours(6),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = weaveId,
+                `type` = TaskTypes.Weave
+              )
+            ) :: Nil
+          )
+
+          testTimetableGeneration(
+            today = today,
+            threadId = threadId,
+            weaveId = weaveId
+          )(
+            currentTemplate = currentTemplate,
+            oneOffs = oneOff1 :: oneOff2 :: Nil,
+            createCommand = createCommand
+          )()
         }
 
         it("should throw an exception if there is a one-off slot with no event to fill it with") {
@@ -539,11 +698,11 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         }
       }
     }
-
     describe("handling timetables") {
       it("should be able to update a timetable") {
         val server = newServer()
         when(server.repo.updateTimetable(eqTo(SD.timetableUpdate))).thenReturn(DBIOAction.successful(true))
+        when(server.db.run(DBIOAction.successful(true))).thenReturn(Future.successful(true))
         whenReady(server.timetableService.updateCurrentTimetable(SD.timetableUpdate)) { result =>
           result shouldBe true
           verify(server.repo).updateTimetable(eqTo(SD.timetableUpdate))
@@ -554,6 +713,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
       it("should be able to retrieve the current timetable") {
         val server = newServer()
         when(server.repo.currentTimetable).thenReturn(DBIOAction.successful(Some(SD.timetable)))
+        when(server.db.run(DBIOAction.successful(Some(SD.timetable)))).thenReturn(Future.successful(Some(SD.timetable)))
         whenReady(server.timetableService.currentTimetable) { result =>
           result shouldBe Some(SD.timetable)
           verify(server.repo).currentTimetable
@@ -580,9 +740,12 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
   ): Unit = {
     val server = newServer()
     when(server.repo.currentTemplate).thenReturn(DBIOAction.successful(Some(currentTemplate)))
+    when(server.db.run(DBIOAction.successful(Some(currentTemplate)))).thenReturn(Future.successful(Some(currentTemplate)))
     when(server.timer.today).thenReturn(today)
     when(server.planningService.currentPortion).thenReturn(Future.successful(Some(currentPortion)))
     when(server.repo.createTimetable(createCommand)).thenReturn(DBIOAction.successful(timetableInRepo))
+    when(server.db.run(eqTo(DBIOAction.successful(timetableInRepo)))).thenReturn(Future.successful(timetableInRepo))
+    when(server.db.run(DBIOAction.successful(timetableInRepo))).thenReturn(Future.successful(timetableInRepo))
     when(server.planningService.thread(threadId)).thenReturn(Future.successful(Some(SampleData.rest.thread)))
     when(server.planningService.weave(weaveId)).thenReturn(Future.successful(Some(SampleData.rest.weave)))
     when(server.planningService.portion(currentPortion.uuid)).thenReturn(Future.successful(Some(SampleData.rest.portion.copy(summary = portionSummary))))
