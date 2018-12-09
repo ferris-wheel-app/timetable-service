@@ -101,8 +101,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
 
       def integrateOneOffs(blocks: Seq[TimeBlockTemplate], oneOffs: Seq[OneOffView]): Seq[TimeBlockTemplate] = {
         (blocks, oneOffs) match {
-          case (Nil, Nil) =>
-            blocks
+          case (Nil, Nil) => blocks
 
           case (Nil, event :: _) =>
             throw InvalidTimetableException(s"there needs to be a one-off slot of${getDurationHms(event.estimate)}")
@@ -118,9 +117,12 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
             continueIntegration(filledInSlot, slots, events)
 
           case (slot :: slots, event :: events) if slot.durationInMillis > event.estimate =>
-            val filledInFirstSlot = slot.copy(task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff))
+            val filledInFirstSlot = slot.copy(
+              task = TaskTemplate(Some(event.uuid), TaskTypes.OneOff),
+              finish = slot.start.plusMillis(event.estimate)
+            )
             val leftOverSlot = TimeBlockTemplate(
-              start = slot.start.plus(event.estimate, ChronoUnit.MILLIS),
+              start = slot.start.plusMillis(event.estimate),
               finish = slot.finish,
               task = TaskTemplate(
                 taskId = None,
@@ -129,8 +131,8 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
             )
             continueIntegration(filledInFirstSlot, Seq(leftOverSlot) ++ slots, events)
 
-          case (slots, Nil) =>
-            integrateOneOffs(slots, Nil)
+          case (slot :: slots, Nil) =>
+            continueIntegration(slot, slots, Nil)
         }
       }
 
@@ -145,7 +147,7 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
       }
 
       def isLostCause(block: TimeBlockTemplate, scheduledChunk: Long): Boolean = {
-        ((block.durationInMillis.toDouble / scheduledChunk) * 100) <= 50
+        ((scheduledChunk / block.durationInMillis.toDouble) * 100) <= 50
       }
 
       def occursBefore(scheduledOneOff: ScheduledOneOffView, block: TimeBlockTemplate): Boolean = {
@@ -188,22 +190,44 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         )
       }
 
+      def mergeScheduledBlocks(blocks: Seq[TimeBlockTemplate]): Seq[TimeBlockTemplate] = {
+        blocks.groupBy(block => (block.task.taskId, block.task.`type`)).flatMap {
+          case ((Some(taskId), TaskTypes.ScheduledOneOff), multiple) if multiple.size > 1 => Seq(TimeBlockTemplate(
+            start = multiple.sortBy(_.start).head.start,
+            finish = multiple.sortBy(_.finish).last.finish,
+            task = TaskTemplate(
+              taskId = Some(taskId),
+              `type` = TaskTypes.ScheduledOneOff
+            )
+          ))
+          case (_, other) => other
+        }.toSeq.sortBy(_.start)
+      }
+
       def integrateScheduledOneOffs(blocks: Seq[TimeBlockTemplate], scheduledOneOffs: Seq[ScheduledOneOffView]): Seq[TimeBlockTemplate] = {
-        ((blocks, scheduledOneOffs) match {
-          case (_, Nil) | (Nil, _) => blocks
-          case (slot :: slots, event :: _) if occursAfter(event, slot) => Seq(slot) ++ integrateScheduledOneOffs(slots, scheduledOneOffs)
+        mergeScheduledBlocks(((blocks, scheduledOneOffs) match {
+          case (_, Nil) | (Nil, _) =>
+            blocks
+
+          case (slot :: slots, event :: _) if occursAfter(event, slot) =>
+            Seq(slot) ++ integrateScheduledOneOffs(slots, scheduledOneOffs)
+
           case (slot :: slots, event :: events) if occursWithin(event, slot) =>
             val (gapBefore, gapAfter) = calculateGaps(event, slot)
             val eventSlot = convertToSlot(event, gapBefore = gapBefore, gapAfter = gapAfter)
             Seq(eventSlot) ++ integrateScheduledOneOffs(slots, events)
+
           case (slot :: slots, event :: _) if occursOverLastHalf(event, slot) =>
             val (eventStart, _) = getStartAndFinish(event)
             val (gapBefore, _) = calculateGaps(event, slot)
             val eventSlots = {
-              if (isLostCause(slot, gapBefore)) Seq(convertToSlot(event, gapBefore = gapBefore))
-              else Seq(slot.copy(finish = eventStart), convertToSlot(event))
+              if (isLostCause(slot, gapBefore))
+                Seq(convertToSlot(event, gapBefore = gapBefore))
+              else
+                Seq(slot.copy(finish = eventStart), convertToSlot(event))
             }
             eventSlots ++ integrateScheduledOneOffs(slots, scheduledOneOffs)
+
           case (slot :: slots, event :: events) if occursOverFirstHalf(event, slot) =>
             val (_, eventFinish) = getStartAndFinish(event)
             val (_, gapAfter) = calculateGaps(event, slot)
@@ -212,8 +236,10 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
               else Seq(convertToSlot(event), slot.copy(start = eventFinish))
             }
             eventSlots ++ integrateScheduledOneOffs(slots, events)
-          case (slot :: slots, event :: events) if occursBefore(event, slot) => Seq(slot) ++ integrateScheduledOneOffs(slots, events)
-        }).distinct
+
+          case (slot :: slots, event :: events) if occursBefore(event, slot) =>
+            Seq(slot) ++ integrateScheduledOneOffs(slots, events)
+        }).distinct)
       }
 
       def fillOneOffSlots(blocks: Seq[TimeBlockTemplate]): Future[Seq[TimeBlockTemplate]] = {

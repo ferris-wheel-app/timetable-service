@@ -1,6 +1,6 @@
 package com.ferris.timetable.service
 
-import java.time.{LocalDate, LocalTime}
+import java.time.{LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
 import com.ferris.planning.MockPlanningServiceComponent
@@ -16,7 +16,7 @@ import com.ferris.timetable.service.conversions.TypeResolvers.TaskType
 import com.ferris.timetable.service.exceptions.Exceptions._
 import com.ferris.timetable.utils.TimetableUtils
 import com.ferris.utils.MockTimerComponent
-import org.mockito.Matchers.{eq => eqTo, any}
+import org.mockito.Matchers.{eq => eqTo}
 import org.mockito.Mockito._
 import org.scalatest.{FunSpec, Matchers}
 import org.scalatest.concurrent.ScalaFutures
@@ -462,12 +462,12 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
           )
           val oneOff1 = SampleData.rest.oneOff.copy(
             uuid = UUID.randomUUID,
-            estimate = 10800000L,
+            estimate = 3.hours.toMillis,
             status = Status.planned
           )
           val oneOff2 = SampleData.rest.oneOff.copy(
             uuid = UUID.randomUUID,
-            estimate = 10800000L,
+            estimate = 3.hours.toMillis,
             status = Status.planned
           )
 
@@ -538,12 +538,12 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
           )
           val oneOff1 = SampleData.rest.oneOff.copy(
             uuid = UUID.randomUUID,
-            estimate = 10800000L,
+            estimate = 3.hours.toMillis,
             status = Status.planned
           )
           val oneOff2 = SampleData.rest.oneOff.copy(
             uuid = UUID.randomUUID,
-            estimate = 10800000L,
+            estimate = 3.hours.toMillis,
             status = Status.planned
           )
 
@@ -616,12 +616,12 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
           )
           val oneOff1 = SampleData.rest.oneOff.copy(
             uuid = UUID.randomUUID,
-            estimate = 7200000L,
+            estimate = 2.hours.toMillis,
             status = Status.planned
           )
           val oneOff2 = SampleData.rest.oneOff.copy(
             uuid = UUID.randomUUID,
-            estimate = 10800000L,
+            estimate = 3.hours.toMillis,
             status = Status.planned
           )
 
@@ -694,12 +694,12 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
           )
           val oneOff1 = SampleData.rest.oneOff.copy(
             uuid = UUID.randomUUID,
-            estimate = 3600000L,
+            estimate = 1.hour.toMillis,
             status = Status.planned
           )
           val oneOff2 = SampleData.rest.oneOff.copy(
             uuid = UUID.randomUUID,
-            estimate = 10800000L,
+            estimate = 3.hours.toMillis,
             status = Status.planned
           )
 
@@ -819,23 +819,236 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
       }
 
       describe("with scheduled one-offs") {
-        it("should correctly handle the absence of scheduled one-off slots and events") {
-
-        }
+        val today = LocalDate.now
+        val startTime = LocalTime.of(9, 30)
+        val threadId = UUID.randomUUID
+        val laserDonutId = UUID.randomUUID
+        val weaveId = UUID.randomUUID
 
         it("should correctly handle a scheduled event occurring within a block") {
+          val thread = SD.timeBlockTemplate.copy(
+            start = startTime,
+            finish = startTime.plusHours(2),
+            task = SD.taskTemplate.copy(
+              taskId = Some(threadId),
+              `type` = TaskTypes.Thread
+            )
+          )
+          val laserDonut = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(2),
+            finish = startTime.plusHours(4),
+            task = SD.taskTemplate.copy(
+              taskId = None,
+              `type` = TaskTypes.LaserDonut
+            )
+          )
+          val weave = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(4),
+            finish = startTime.plusHours(6),
+            task = SD.taskTemplate.copy(
+              taskId = Some(weaveId),
+              `type` = TaskTypes.Weave
+            )
+          )
+          val currentTemplate = SD.timetableTemplate.copy(
+            blocks = thread :: laserDonut :: weave :: Nil
+          )
+          val scheduledOneOff = SampleData.rest.scheduledOneOff.copy(
+            uuid = UUID.randomUUID,
+            occursOn = LocalDateTime.of(today, startTime.plusHours(2).plusMinutes(30)),
+            estimate = 1.hour.toMillis,
+            status = Status.planned
+          )
 
+          val createCommand = SD.timetableCreation.copy(
+            date = today,
+            blocks = SD.scheduledTimeBlockCreation.copy(
+              start = startTime,
+              finish = startTime.plusHours(2),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = threadId,
+                `type` = TaskTypes.Thread
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(2),
+              finish = startTime.plusHours(4),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = scheduledOneOff.uuid,
+                `type` = TaskTypes.ScheduledOneOff
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(4),
+              finish = startTime.plusHours(6),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = weaveId,
+                `type` = TaskTypes.Weave
+              )
+            ) :: Nil
+          )
+
+          testSuccessfulTimetableGeneration(
+            today = today,
+            threadId = threadId,
+            weaveId = weaveId
+          )(
+            currentTemplate = currentTemplate,
+            scheduledOneOffs = scheduledOneOff :: Nil,
+            createCommand = createCommand
+          ){ server =>
+            verify(server.repo).createTimetable(createCommand)
+          }
         }
 
-        it("should correctly handle a scheduled event occurring over the last half of a block") {
+        it("should correctly handle a scheduled event overlap with a lost cause") {
+          val thread = SD.timeBlockTemplate.copy(
+            start = startTime,
+            finish = startTime.plusHours(2),
+            task = SD.taskTemplate.copy(
+              taskId = Some(threadId),
+              `type` = TaskTypes.Thread
+            )
+          )
+          val laserDonut = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(2),
+            finish = startTime.plusHours(4),
+            task = SD.taskTemplate.copy(
+              taskId = Some(laserDonutId),
+              `type` = TaskTypes.LaserDonut
+            )
+          )
+          val weave = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(4),
+            finish = startTime.plusHours(6),
+            task = SD.taskTemplate.copy(
+              taskId = Some(weaveId),
+              `type` = TaskTypes.Weave
+            )
+          )
+          val currentTemplate = SD.timetableTemplate.copy(
+            blocks = thread :: laserDonut :: weave :: Nil
+          )
+          val scheduledOneOff = SampleData.rest.scheduledOneOff.copy(
+            uuid = UUID.randomUUID,
+            occursOn = LocalDateTime.of(today, startTime.plusMinutes(30)),
+            estimate = 3.hour.toMillis,
+            status = Status.planned
+          )
 
+          val createCommand = SD.timetableCreation.copy(
+            date = today,
+            blocks = SD.scheduledTimeBlockCreation.copy(
+              start = startTime,
+              finish = startTime.plusHours(4),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = scheduledOneOff.uuid,
+                `type` = TaskTypes.ScheduledOneOff
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(4),
+              finish = startTime.plusHours(6),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = weaveId,
+                `type` = TaskTypes.Weave
+              )
+            ) :: Nil
+          )
+
+          testSuccessfulTimetableGeneration(
+            today = today,
+            threadId = threadId,
+            weaveId = weaveId
+          )(
+            currentTemplate = currentTemplate,
+            scheduledOneOffs = scheduledOneOff :: Nil,
+            createCommand = createCommand
+          ){ server =>
+            verify(server.repo).createTimetable(createCommand)
+          }
         }
 
-        it("should correctly handle a scheduled event occurring over the first half of a block") {
+        it("should correctly handle a scheduled event overlap without a lost cause") {
+          val thread = SD.timeBlockTemplate.copy(
+            start = startTime,
+            finish = startTime.plusHours(2),
+            task = SD.taskTemplate.copy(
+              taskId = Some(threadId),
+              `type` = TaskTypes.Thread
+            )
+          )
+          val laserDonut = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(2),
+            finish = startTime.plusHours(4),
+            task = SD.taskTemplate.copy(
+              taskId = Some(laserDonutId),
+              `type` = TaskTypes.LaserDonut
+            )
+          )
+          val weave = SD.timeBlockTemplate.copy(
+            start = startTime.plusHours(4),
+            finish = startTime.plusHours(6),
+            task = SD.taskTemplate.copy(
+              taskId = Some(weaveId),
+              `type` = TaskTypes.Weave
+            )
+          )
+          val currentTemplate = SD.timetableTemplate.copy(
+            blocks = thread :: laserDonut :: weave :: Nil
+          )
+          val scheduledOneOff = SampleData.rest.scheduledOneOff.copy(
+            uuid = UUID.randomUUID,
+            occursOn = LocalDateTime.of(today, startTime.plusHours(1).plusMinutes(30)),
+            estimate = 1.hour.toMillis,
+            status = Status.planned
+          )
 
+          val createCommand = SD.timetableCreation.copy(
+            date = today,
+            blocks = SD.scheduledTimeBlockCreation.copy(
+              start = startTime,
+              finish = startTime.plusHours(1).plusMinutes(30),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = threadId,
+                `type` = TaskTypes.Thread
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(1).plusMinutes(30),
+              finish = startTime.plusHours(2).plusMinutes(30),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = scheduledOneOff.uuid,
+                `type` = TaskTypes.ScheduledOneOff
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(2).plusMinutes(30),
+              finish = startTime.plusHours(4),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = laserDonutId,
+                `type` = TaskTypes.LaserDonut
+              )
+            ) :: SD.scheduledTimeBlockCreation.copy(
+              start = startTime.plusHours(4),
+              finish = startTime.plusHours(6),
+              task = SD.scheduledTaskCreation.copy(
+                taskId = weaveId,
+                `type` = TaskTypes.Weave
+              )
+            ) :: Nil
+          )
+
+          testSuccessfulTimetableGeneration(
+            today = today,
+            threadId = threadId,
+            weaveId = weaveId
+          )(
+            currentTemplate = currentTemplate,
+            scheduledOneOffs = scheduledOneOff :: Nil,
+            createCommand = createCommand
+          ){ server =>
+            verify(server.repo).createTimetable(createCommand)
+          }
         }
       }
     }
+
     describe("handling timetables") {
       it("should be able to update a timetable") {
         val server = newServer()
@@ -881,6 +1094,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
     ){ server =>
       whenReady(server.timetableService.generateTimetable) { result =>
         result shouldBe timetableView
+        verifications(server)
       }
     }
   }
