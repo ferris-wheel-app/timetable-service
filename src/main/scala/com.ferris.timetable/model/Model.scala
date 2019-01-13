@@ -10,15 +10,20 @@ object Model {
     `type`: TaskTypes.TaskType
   )
 
-  case class TimeBlockTemplate (
-    start: LocalTime,
-    finish: LocalTime,
-    task: TaskTemplate
-  ) {
+  trait TimeBlock {
+    def start: LocalTime
+    def finish: LocalTime
+
     def durationInMillis: Long = {
       Duration.between(start, finish).toMillis
     }
   }
+
+  case class TimeBlockTemplate (
+    start: LocalTime,
+    finish: LocalTime,
+    task: TaskTemplate
+  ) extends TimeBlock
 
   case class TimetableTemplate (
     blocks: Seq[TimeBlockTemplate]
@@ -43,10 +48,7 @@ object Model {
     isDone: Boolean
   )
 
-  sealed trait ScheduledTimeBlock {
-    def start: LocalTime
-    def finish: LocalTime
-  }
+  sealed trait ScheduledTimeBlock extends TimeBlock
 
   case class ConcreteBlock (
     start: LocalTime,
@@ -146,10 +148,6 @@ object Model {
 
     case object ScheduledOneOff extends TaskType {
       override val dbValue = "SCHEDULED_ONE_OFF"
-    }
-
-    case object BonusTime extends TaskType {
-      override val dbValue = "BONUS_TIME"
     }
   }
 }

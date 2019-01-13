@@ -286,6 +286,15 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         timetable.copy(blocks = blocksWithBuffers)
       }
 
+      def fetchAssociatedSkills(uuid: UUID, taskType: TaskTypes.TaskType) = taskType match {
+        case TaskTypes.Thread => planningService.thread(uuid).map(_.map(_.associatedSkills))
+        case TaskTypes.Weave => planningService.weave(uuid).map(_.map(_.associatedSkills))
+        case TaskTypes.LaserDonut => planningService.portion(uuid).map(_.map(_.associatedSkills))
+        case TaskTypes.Hobby => planningService.hobby(uuid).map(_.map(_.associatedSkills))
+        case TaskTypes.OneOff => planningService.oneOff(uuid).map(_.map(_.associatedSkills))
+        case TaskTypes.ScheduledOneOff => planningService.scheduledOneOff(uuid).map(_.map(_.associatedSkills))
+      }
+
       def fetchSummary(uuid: UUID, taskType: TaskTypes.TaskType) = taskType match {
         case TaskTypes.Thread => planningService.thread(uuid).map(_.map(_.summary))
         case TaskTypes.Weave => planningService.weave(uuid).map(_.map(_.summary))

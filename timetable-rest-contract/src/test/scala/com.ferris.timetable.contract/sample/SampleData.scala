@@ -3,7 +3,8 @@ package com.ferris.timetable.contract.sample
 import java.time.{LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
-import com.ferris.planning.contract.resource.Resources.Out.{HobbyView, PortionView, ThreadView, WeaveView}
+import com.ferris.planning.contract.resource.Resources.In.{PractisedHours, _}
+import com.ferris.planning.contract.resource.Resources.Out._
 import com.ferris.timetable.contract.resource.Resources.In._
 import com.ferris.timetable.contract.resource.Resources.Out._
 
@@ -113,11 +114,63 @@ object SampleData {
     blocks = concreteBlock :: bufferBlock :: concreteBlock :: Nil
   )
 
+  val skillCategoryCreation = SkillCategoryCreation(
+    name = "Functional Programming",
+    categoryId = UUID.randomUUID
+  )
+
+  val skillCategoryUpdate = SkillCategoryUpdate(
+    name = Some("Functional Programming"),
+    categoryId = Some(UUID.randomUUID)
+  )
+
+  val skillCategory = SkillCategoryView(
+    uuid = UUID.randomUUID,
+    name = "Functional Programming",
+    categoryId = UUID.randomUUID
+  )
+
+  val skillCreation = SkillCreation(
+    name = "Cats",
+    categoryId = UUID.randomUUID,
+    proficiency = "intermediate",
+    practisedHours = 500L
+  )
+
+  val skillUpdate = SkillUpdate(
+    name = Some("Cats"),
+    categoryId = Some(UUID.randomUUID),
+    proficiency = Some("intermediate"),
+    practisedHours = Some(500L)
+  )
+
+  val skill = SkillView(
+    uuid = UUID.randomUUID,
+    name = "Cats",
+    categoryId = UUID.randomUUID,
+    proficiency = "intermediate",
+    practisedHours = 500L,
+    lastApplied = Some(LocalDateTime.now)
+  )
+
+  val associatedSkillInsertion = AssociatedSkillInsertion(
+    skillId = UUID.randomUUID,
+    relevance = "maintenance",
+    level = "intermediate"
+  )
+
+  val associatedSkill = AssociatedSkillView(
+    skillId = UUID.randomUUID,
+    relevance = "maintenance",
+    level = "intermediate"
+  )
+
   val thread = ThreadView(
     uuid = UUID.randomUUID,
     goalId = Some(UUID.randomUUID),
     summary = "Go for a run",
     description = "Go for a run",
+    associatedSkills = associatedSkill :: Nil,
     performance = "on-track",
     createdOn = LocalDateTime.now,
     lastModified = None,
@@ -129,6 +182,7 @@ object SampleData {
     goalId = Some(UUID.randomUUID),
     summary = "Organise a tech lecture",
     description = "Create a presentation about Kafka",
+    associatedSkills = associatedSkill :: Nil,
     `type` = "PDR",
     status = "planned",
     createdOn = LocalDateTime.now,
@@ -152,6 +206,7 @@ object SampleData {
     goalId = Some(UUID.randomUUID),
     summary = "Yoga",
     description = "Train in Acro-Yoga",
+    associatedSkills = associatedSkill :: Nil,
     frequency = "continuous",
     `type` = "active",
     createdOn = LocalDateTime.now,

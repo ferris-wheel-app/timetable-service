@@ -31,7 +31,7 @@ create table scheduled_time_block (
   date DATE NOT NULL,
   start_time TIME NOT NULL,
   finish_time TIME NOT NULL,
-  task_type VARCHAR(36) NOT NULL check (task_type in ('THREAD', 'WEAVE', 'LASER_DONUT', 'HOBBY', 'ONE_OFF', 'SCHEDULED_ONE_OFF', 'BONUS_TIME')),
+  task_type VARCHAR(36) NOT NULL check (task_type in ('THREAD', 'WEAVE', 'LASER_DONUT', 'HOBBY', 'ONE_OFF', 'SCHEDULED_ONE_OFF')),
   task_id VARCHAR(36) NOT NULL,
   is_done TINYINT(1) NOT NULL DEFAULT 0,
   PRIMARY KEY (id)

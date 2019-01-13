@@ -3,7 +3,7 @@ package com.ferris.timetable.command
 import java.time.{LocalDate, LocalTime}
 import java.util.UUID
 
-import com.ferris.timetable.model.Model.TaskTypes
+import com.ferris.timetable.model.Model.{TaskTypes, TimeBlock}
 
 object Commands {
 
@@ -53,7 +53,7 @@ object Commands {
     start: LocalTime,
     finish: LocalTime,
     task: CreateScheduledTask
-  )
+  ) extends TimeBlock
 
   case class UpdateScheduledTimeBlock (
     start: LocalTime,
