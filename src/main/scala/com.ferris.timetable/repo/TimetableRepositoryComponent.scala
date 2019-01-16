@@ -35,6 +35,7 @@ trait TimetableRepositoryComponent {
     def getRoutine(uuid: UUID): DBIO[Option[Routine]]
     def currentTemplate: DBIO[Option[TimetableTemplate]]
     def currentTimetable: DBIO[Option[Timetable]]
+    def getSlot(start: LocalTime, finish: LocalTime): DBIO[Option[ScheduledTimeBlock]]
 
     def deleteRoutine(uuid: UUID): DBIO[Boolean]
   }
@@ -124,13 +125,17 @@ trait SqlTimetableRepositoryComponent extends TimetableRepositoryComponent {
       } yield (otherRoutines :: thisRoutine :: Nil).exists(_ > 0)
     }
 
-    override def updateTimetable(update: UpdateTimetable): DBIO[Boolean] = {
-      def getSlot(start: LocalTime, finish: LocalTime) = {
-        ScheduledTimeBlockTable.filter(row => row.startTime === start.toSqlTime && row.finishTime === finish.toSqlTime)
-      }
+    override def getSlot(start: LocalTime, finish: LocalTime): DBIO[Option[ScheduledTimeBlock]] = {
+      getSlotQuery(start, finish).result.map(_.headOption.map(_.asScheduledTimeBlock))
+    }
 
+    private def getSlotQuery(start: LocalTime, finish: LocalTime) = {
+      ScheduledTimeBlockTable.filter(row => row.startTime === start.toSqlTime && row.finishTime === finish.toSqlTime)
+    }
+
+    override def updateTimetable(update: UpdateTimetable): DBIO[Boolean] = {
       for {
-        updates <- DBIO.sequence(update.blocks.map(block => getSlot(block.start, block.finish).map(_.isDone).update(block.done)))
+        updates <- DBIO.sequence(update.blocks.map(block => getSlotQuery(block.start, block.finish).map(_.isDone).update(block.done)))
       } yield updates.forall(_ > 0)
     }
 

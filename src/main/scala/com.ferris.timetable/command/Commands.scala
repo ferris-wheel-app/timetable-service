@@ -59,7 +59,7 @@ object Commands {
     start: LocalTime,
     finish: LocalTime,
     done: Boolean
-  )
+  ) extends TimeBlock
 
   case class CreateTimetable (
     date: LocalDate,

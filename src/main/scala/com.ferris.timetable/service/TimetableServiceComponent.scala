@@ -7,7 +7,7 @@ import java.util.UUID
 import cats.data.EitherT
 import cats.implicits._
 import com.ferris.planning.PlanningServiceComponent
-import com.ferris.planning.contract.resource.Resources.Out.{OneOffView, ScheduledOneOffView}
+import com.ferris.planning.contract.resource.Resources.Out.{AssociatedSkillView, OneOffView, ScheduledOneOffView}
 import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.contract.resource.Resources.Out._
 import com.ferris.timetable.db.DatabaseComponent
@@ -286,15 +286,6 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         timetable.copy(blocks = blocksWithBuffers)
       }
 
-      def fetchAssociatedSkills(uuid: UUID, taskType: TaskTypes.TaskType) = taskType match {
-        case TaskTypes.Thread => planningService.thread(uuid).map(_.map(_.associatedSkills))
-        case TaskTypes.Weave => planningService.weave(uuid).map(_.map(_.associatedSkills))
-        case TaskTypes.LaserDonut => planningService.portion(uuid).map(_.map(_.associatedSkills))
-        case TaskTypes.Hobby => planningService.hobby(uuid).map(_.map(_.associatedSkills))
-        case TaskTypes.OneOff => planningService.oneOff(uuid).map(_.map(_.associatedSkills))
-        case TaskTypes.ScheduledOneOff => planningService.scheduledOneOff(uuid).map(_.map(_.associatedSkills))
-      }
-
       def fetchSummary(uuid: UUID, taskType: TaskTypes.TaskType) = taskType match {
         case TaskTypes.Thread => planningService.thread(uuid).map(_.map(_.summary))
         case TaskTypes.Weave => planningService.weave(uuid).map(_.map(_.summary))
@@ -364,6 +355,32 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
     }
 
     override def updateCurrentTimetable(update: UpdateTimetable)(implicit ex: ExecutionContext): Future[Boolean] = {
+      def fetchAssociatedSkills(uuid: UUID, taskType: TaskTypes.TaskType) = taskType match {
+        case TaskTypes.Thread => planningService.thread(uuid).map(_.map(_.associatedSkills).getOrElse(Nil))
+        case TaskTypes.Weave => planningService.weave(uuid).map(_.map(_.associatedSkills).getOrElse(Nil))
+        case TaskTypes.LaserDonut => planningService.portion(uuid).map(_.map(_.associatedSkills).getOrElse(Nil))
+        case TaskTypes.Hobby => planningService.hobby(uuid).map(_.map(_.associatedSkills).getOrElse(Nil))
+        case TaskTypes.OneOff => planningService.oneOff(uuid).map(_.map(_.associatedSkills).getOrElse(Nil))
+        case TaskTypes.ScheduledOneOff => planningService.scheduledOneOff(uuid).map(_.map(_.associatedSkills).getOrElse(Nil))
+      }
+
+      def updateAssociatedSkill(skillId: UUID, duration: Long) = {
+        planningService.updatePractisedHours(skillId, duration)
+      }
+
+      def updateAssociatedSkills(skills: Seq[AssociatedSkillView], duration: Long) = {
+        skills.map(skill => updateAssociatedSkill(skill.skillId, duration))
+      }
+
+      def updateBlocks(blocks: Seq[UpdateScheduledTimeBlock]) = {
+        val updatedBlocks = blocks.filter(_.done)
+        for {
+          block <- updatedBlocks
+          slot <- repo.getSlot(block.start, block.finish)
+          _ <- slot.map(s => updateAssociatedSkills(s.asInstanceOf[ConcreteBlock].task.taskId, block.durationInMillis)
+        } yield ()
+      }
+
       db.run(repo.updateTimetable(update))
     }
 
