@@ -194,6 +194,7 @@ object SampleData {
     uuid = UUID.randomUUID,
     laserDonutId = UUID.randomUUID,
     summary = "Write tests for the TimetableService.",
+    associatedSkills = associatedSkill :: Nil,
     order = 1,
     status = "planned",
     createdOn = LocalDateTime.now,

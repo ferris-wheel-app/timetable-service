@@ -372,25 +372,28 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
         Future.sequence(skills.map(skill => updateAssociatedSkill(skill.skillId, duration)))
       }
 
-      def updateBlocks(blocks: Seq[UpdateScheduledTimeBlock]): Future[Seq[SkillView]] = {
-        Future.sequence {
+      def updateBlocks(blocks: Seq[UpdateScheduledTimeBlock]): Future[Boolean] = {
+        Future.traverse {
           blocks.filter(_.done).map { block =>
             db.run(repo.getSlot(block.start, block.finish)).flatMap { slot =>
               slot.collect {
-                case concrete@ConcreteBlock(_, _, task) => for {
+                case concrete @ ConcreteBlock(_, _, task) => for {
                   associatedSkills <- fetchAssociatedSkills(task.taskId, task.`type`)
                   updatedSkills <- updateAssociatedSkills(associatedSkills, concrete.durationInMillis)
                 } yield updatedSkills
               }.getOrElse(Future.successful(Nil))
             }
           }
-        }
+        }{ updatedSkills =>
+          updatedSkills.map(skills => skills.nonEmpty)
+        }.map(_.exists(boolean => boolean))
       }
 
       for {
+        _ <- updateBlocks(update.blocks)
+        result <- db.run(repo.updateTimetable(update))
+      } yield result
 
-      } yield
-      db.run(repo.updateTimetable(update))
     }
 
     override def getRoutines(implicit ex: ExecutionContext): Future[Seq[Routine]] = {
