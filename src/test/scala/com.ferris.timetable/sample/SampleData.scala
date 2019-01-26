@@ -103,7 +103,7 @@ object SampleData extends DefaultTimerComponent {
     val scheduledTimeBlockUpdate = UpdateScheduledTimeBlock(
       start = now,
       finish = later,
-      done = true
+      done = false
     )
 
     val concreteBlock = ConcreteBlock(

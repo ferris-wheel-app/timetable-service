@@ -184,7 +184,7 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
 
       it("should be able to generate a timetable if all criteria are met") {
         val today = LocalDate.now
-        val startTime = LocalTime.now
+        val startTime = LocalTime.of(9, 0, 0)
         val threadId = UUID.randomUUID
         val weaveId = UUID.randomUUID
         val portionId = UUID.randomUUID
@@ -1057,6 +1057,28 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
         whenReady(server.timetableService.updateCurrentTimetable(SD.timetableUpdate)) { result =>
           result shouldBe true
           verify(server.repo).updateTimetable(eqTo(SD.timetableUpdate))
+          verifyNoMoreInteractions(server.repo)
+        }
+      }
+
+      it("should be able to update a timetable with completed tasks") {
+        val server = newServer()
+        val taskId = SD.concreteBlock.task.taskId
+        val taskStart = LocalTime.of(10, 0, 0)
+        val taskFinish = LocalTime.of(11, 0, 0)
+        val update = SD.timetableUpdate.copy(
+          blocks = SD.scheduledTimeBlockUpdate.copy(
+            start = taskStart,
+            finish = taskFinish,
+            done = true
+          ) :: Nil
+        )
+        when(server.repo.getSlot(eqTo(taskStart), eqTo(taskFinish))).thenReturn(DBIOAction.successful(Some(SD.concreteBlock)))
+        when(server.repo.updateTimetable(eqTo(update))).thenReturn(DBIOAction.successful(true))
+        when(server.db.run(DBIOAction.successful(true))).thenReturn(Future.successful(true))
+        whenReady(server.timetableService.updateCurrentTimetable(update)) { result =>
+          result shouldBe true
+          verify(server.repo).updateTimetable(eqTo(update))
           verifyNoMoreInteractions(server.repo)
         }
       }
