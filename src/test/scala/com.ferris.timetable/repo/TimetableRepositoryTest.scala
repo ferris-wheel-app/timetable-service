@@ -253,6 +253,34 @@ class TimetableRepositoryTest extends AsyncFunSpec
       }
     }
 
+    describe("slot retrieving") {
+      val firstStart = LocalTime.now.truncatedTo(ChronoUnit.MINUTES)
+      val firstFinish = firstStart.plusHours(2L)
+      val secondStart = firstFinish
+      val secondFinish = secondStart.plusHours(2L)
+      val thirdStart = secondFinish
+      val thirdFinish = thirdStart.plusHours(2L)
+      val firstBlockCreation = SD.scheduledTimeBlockCreation.copy(start = firstStart, finish = firstFinish, task = SD.scheduledTaskCreation)
+      val secondBlockCreation = SD.scheduledTimeBlockCreation.copy(start = secondStart, finish = secondFinish, task = SD.scheduledTaskCreation)
+      val thirdBlockCreation = SD.scheduledTimeBlockCreation.copy(start = thirdStart, finish = thirdFinish, task = SD.scheduledTaskCreation)
+      val secondBlock = SD.concreteBlock.copy(start = secondStart, finish = secondFinish, task = SD.scheduledTask.copy(taskId = secondBlockCreation.task.taskId))
+      val blocksCreation = firstBlockCreation :: secondBlockCreation :: thirdBlockCreation :: Nil
+
+      it("should get a block based on the start and finish times") {
+        db.run(repo.createTimetable(SD.timetableCreation.copy(blocks = blocksCreation))).futureValue
+        val slot = db.run(repo.getSlot(secondStart, secondFinish)).futureValue
+
+        slot.value shouldBe secondBlock
+      }
+
+      it("should return an empty Option, if it is not found") {
+        db.run(repo.createTimetable(SD.timetableCreation.copy(blocks = blocksCreation))).futureValue
+        val slot = db.run(repo.getSlot(secondStart, thirdFinish)).futureValue
+
+        slot shouldBe empty
+      }
+    }
+
     describe("updating") {
       it("should update a timetable") {
         val taskId = UUID.randomUUID
