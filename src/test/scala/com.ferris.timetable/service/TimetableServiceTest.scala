@@ -1073,13 +1073,24 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
             done = true
           ) :: Nil
         )
+        val portion = SampleData.rest.portion
+        val skillId = portion.associatedSkills.head.skillId
+        val duration = SD.concreteBlock.durationInMillis
+
         when(server.repo.getSlot(eqTo(taskStart), eqTo(taskFinish))).thenReturn(DBIOAction.successful(Some(SD.concreteBlock)))
+        when(server.db.run(DBIOAction.successful(Some(SD.concreteBlock)))).thenReturn(Future.successful(Some(SD.concreteBlock)))
+        when(server.planningService.portion(SD.concreteBlock.task.taskId)).thenReturn(Future.successful(Some(portion)))
+        when(server.planningService.updatePractisedHours(skillId, duration)).thenReturn(Future.successful(SampleData.rest.skill))
         when(server.repo.updateTimetable(eqTo(update))).thenReturn(DBIOAction.successful(true))
         when(server.db.run(DBIOAction.successful(true))).thenReturn(Future.successful(true))
         whenReady(server.timetableService.updateCurrentTimetable(update)) { result =>
           result shouldBe true
+          verify(server.repo).getSlot(eqTo(taskStart), eqTo(taskFinish))
+          verify(server.planningService).portion(SD.concreteBlock.task.taskId)
+          verify(server.planningService).updatePractisedHours(skillId, duration)
           verify(server.repo).updateTimetable(eqTo(update))
           verifyNoMoreInteractions(server.repo)
+          verifyNoMoreInteractions(server.planningService)
         }
       }
 
