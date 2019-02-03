@@ -240,16 +240,18 @@ object SampleData extends DefaultTimerComponent {
     val skillCategory = SkillCategoryView(
       uuid = UUID.randomUUID,
       name = "Functional Programming",
-      categoryId = UUID.randomUUID
+      parentCategory = Some(UUID.randomUUID)
     )
 
     val skill = SkillView(
       uuid = UUID.randomUUID,
       name = "Cats",
-      categoryId = UUID.randomUUID,
+      parentCategory = UUID.randomUUID,
       proficiency = "intermediate",
       practisedHours = 500L,
-      lastApplied = Some(LocalDateTime.now)
+      createdOn = LocalDateTime.now,
+      lastModified = None,
+      lastApplied = None
     )
 
     val associatedSkillInsertion = AssociatedSkillInsertion(
@@ -264,12 +266,33 @@ object SampleData extends DefaultTimerComponent {
       level = "intermediate"
     )
 
+    val relationship = RelationshipView(
+      uuid = UUID.randomUUID,
+      name = "Daniel Larusso",
+      category = "friends",
+      traits = "focused" :: "disciplined" :: Nil,
+      likes = "karate" :: "cars" :: Nil,
+      dislikes = "bullies" :: Nil,
+      hobbies = "karate" :: Nil,
+      createdOn = LocalDateTime.now,
+      lastModified = Some(LocalDateTime.now),
+      lastMeet = Some(LocalDate.now)
+    )
+
+    val valueDimensions = ValueDimensionsView(
+      associatedMissions = UUID.randomUUID :: Nil,
+      associatedSkills = associatedSkill :: Nil,
+      relationships = UUID.randomUUID :: Nil,
+      helpsSafetyNet = true,
+      expandsWorldView = true
+    )
+
     val thread = ThreadView(
       uuid = UUID.randomUUID,
       goalId = Some(UUID.randomUUID),
       summary = "Go for a run",
       description = "Go for a run",
-      associatedSkills = associatedSkill :: Nil,
+      valueDimensions = valueDimensions,
       performance = "on-track",
       createdOn = LocalDateTime.now,
       lastModified = None,
@@ -281,7 +304,7 @@ object SampleData extends DefaultTimerComponent {
       goalId = Some(UUID.randomUUID),
       summary = "Organise a tech lecture",
       description = "Create a presentation about Kafka",
-      associatedSkills = associatedSkill :: Nil,
+      valueDimensions = valueDimensions,
       `type` = "PDR",
       status = "planned",
       createdOn = LocalDateTime.now,
@@ -293,7 +316,7 @@ object SampleData extends DefaultTimerComponent {
       uuid = UUID.randomUUID,
       laserDonutId = UUID.randomUUID,
       summary = "Write tests for the TimetableService.",
-      associatedSkills = associatedSkill :: Nil,
+      valueDimensions = valueDimensions,
       order = 1,
       status = "planned",
       createdOn = LocalDateTime.now,
@@ -306,7 +329,7 @@ object SampleData extends DefaultTimerComponent {
       goalId = Some(UUID.randomUUID),
       summary = "Yoga",
       description = "Train in Acro-Yoga",
-      associatedSkills = associatedSkill :: Nil,
+      valueDimensions = valueDimensions,
       frequency = "continuous",
       `type` = "active",
       createdOn = LocalDateTime.now,
@@ -318,7 +341,7 @@ object SampleData extends DefaultTimerComponent {
       uuid = UUID.randomUUID,
       goalId = Some(UUID.randomUUID),
       description = "Get window fixed",
-      associatedSkills = associatedSkill :: Nil,
+      valueDimensions = valueDimensions,
       estimate = 14400000L,
       order = 5,
       status = "planned",
@@ -332,7 +355,7 @@ object SampleData extends DefaultTimerComponent {
       uuid = UUID.randomUUID,
       goalId = Some(UUID.randomUUID),
       description = "Get window fixed",
-      associatedSkills = associatedSkill :: Nil,
+      valueDimensions = valueDimensions,
       estimate = 14400000L,
       status = "planned",
       createdOn = LocalDateTime.now,

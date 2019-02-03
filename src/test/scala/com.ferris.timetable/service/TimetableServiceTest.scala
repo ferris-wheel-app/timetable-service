@@ -4,6 +4,7 @@ import java.time.{LocalDate, LocalDateTime, LocalTime}
 import java.util.UUID
 
 import com.ferris.planning.MockPlanningServiceComponent
+import com.ferris.planning.contract.resource.Resources.In.RelationshipUpdate
 import com.ferris.planning.contract.resource.Resources.Out.{OneOffView, PortionView, ScheduledOneOffView}
 import com.ferris.planning.contract.resource.TypeFields.Status
 import com.ferris.timetable.command.Commands.CreateTimetable
@@ -1074,20 +1075,35 @@ class TimetableServiceTest extends FunSpec with ScalaFutures with Matchers {
           ) :: Nil
         )
         val portion = SampleData.rest.portion
-        val skillId = portion.associatedSkills.head.skillId
+        val skillId = portion.valueDimensions.associatedSkills.head.skillId
+        val relationshipId = portion.valueDimensions.relationships.head
         val duration = SD.concreteBlock.durationInMillis
+        val today = LocalDate.now
+        val time = today.atTime(SD.concreteBlock.finish)
+        val relationshipUpdate = RelationshipUpdate(
+          name = None,
+          category = None,
+          traits = None,
+          likes = None,
+          dislikes = None,
+          hobbies = None,
+          lastMeet = Some(today)
+        )
 
         when(server.repo.getSlot(eqTo(taskStart), eqTo(taskFinish))).thenReturn(DBIOAction.successful(Some(SD.concreteBlock)))
         when(server.db.run(DBIOAction.successful(Some(SD.concreteBlock)))).thenReturn(Future.successful(Some(SD.concreteBlock)))
         when(server.planningService.portion(SD.concreteBlock.task.taskId)).thenReturn(Future.successful(Some(portion)))
-        when(server.planningService.updatePractisedHours(skillId, duration)).thenReturn(Future.successful(SampleData.rest.skill))
+        when(server.timer.today).thenReturn(today)
+        when(server.planningService.updatePractisedHours(skillId, duration, time)).thenReturn(Future.successful(SampleData.rest.skill))
+        when(server.planningService.updateRelationship(relationshipId, relationshipUpdate)).thenReturn(Future.successful(SampleData.rest.relationship))
         when(server.repo.updateTimetable(eqTo(update))).thenReturn(DBIOAction.successful(true))
         when(server.db.run(DBIOAction.successful(true))).thenReturn(Future.successful(true))
         whenReady(server.timetableService.updateCurrentTimetable(update)) { result =>
           result shouldBe true
           verify(server.repo).getSlot(eqTo(taskStart), eqTo(taskFinish))
           verify(server.planningService).portion(SD.concreteBlock.task.taskId)
-          verify(server.planningService).updatePractisedHours(skillId, duration)
+          verify(server.planningService).updatePractisedHours(skillId, duration, time)
+          verify(server.planningService).updateRelationship(relationshipId, relationshipUpdate)
           verify(server.repo).updateTimetable(eqTo(update))
           verifyNoMoreInteractions(server.repo)
           verifyNoMoreInteractions(server.planningService)

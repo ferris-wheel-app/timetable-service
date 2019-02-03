@@ -1,13 +1,14 @@
 package com.ferris.timetable.service
 
-import java.time.LocalTime
+import java.time.{LocalDate, LocalDateTime, LocalTime}
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 import cats.data.EitherT
 import cats.implicits._
 import com.ferris.planning.PlanningServiceComponent
-import com.ferris.planning.contract.resource.Resources.Out.{AssociatedSkillView, OneOffView, ScheduledOneOffView, SkillView}
+import com.ferris.planning.contract.resource.Resources.In.RelationshipUpdate
+import com.ferris.planning.contract.resource.Resources.Out._
 import com.ferris.timetable.command.Commands._
 import com.ferris.timetable.contract.resource.Resources.Out._
 import com.ferris.timetable.db.DatabaseComponent
@@ -355,21 +356,51 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
     }
 
     override def updateCurrentTimetable(update: UpdateTimetable)(implicit ex: ExecutionContext): Future[Boolean] = {
-      def fetchAssociatedSkills(uuid: UUID, taskType: TaskTypes.TaskType): Future[Seq[AssociatedSkillView]] = taskType match {
-        case TaskTypes.Thread => planningService.thread(uuid).map(_.map(_.associatedSkills).getOrElse(Nil))
-        case TaskTypes.Weave => planningService.weave(uuid).map(_.map(_.associatedSkills).getOrElse(Nil))
-        case TaskTypes.LaserDonut => planningService.portion(uuid).map(_.map(_.associatedSkills).getOrElse(Nil))
-        case TaskTypes.Hobby => planningService.hobby(uuid).map(_.map(_.associatedSkills).getOrElse(Nil))
-        case TaskTypes.OneOff => planningService.oneOff(uuid).map(_.map(_.associatedSkills).getOrElse(Nil))
-        case TaskTypes.ScheduledOneOff => planningService.scheduledOneOff(uuid).map(_.map(_.associatedSkills).getOrElse(Nil))
+      type Valuable = {
+        val valueDimensions : ValueDimensionsView
       }
 
-      def updateAssociatedSkill(skillId: UUID, duration: Long): Future[SkillView] = {
-        planningService.updatePractisedHours(skillId, duration)
+      def extractValues(valuable: Option[Valuable]): (Seq[AssociatedSkillView], Seq[UUID]) = {
+        valuable.map { portal =>
+          (portal.valueDimensions.associatedSkills, portal.valueDimensions.relationships)
+        }.getOrElse((Nil, Nil))
       }
 
-      def updateAssociatedSkills(skills: Seq[AssociatedSkillView], duration: Long): Future[Seq[SkillView]] = {
-        Future.sequence(skills.map(skill => updateAssociatedSkill(skill.skillId, duration)))
+      def fetchValueDimensions(uuid: UUID, taskType: TaskTypes.TaskType): Future[(Seq[AssociatedSkillView], Seq[UUID])] = taskType match {
+        case TaskTypes.Thread => planningService.thread(uuid).map(extractValues)
+        case TaskTypes.Weave => planningService.weave(uuid).map(extractValues)
+        case TaskTypes.LaserDonut => planningService.portion(uuid).map(extractValues)
+        case TaskTypes.Hobby => planningService.hobby(uuid).map(extractValues)
+        case TaskTypes.OneOff => planningService.oneOff(uuid).map(extractValues)
+        case TaskTypes.ScheduledOneOff => planningService.scheduledOneOff(uuid).map(extractValues)
+      }
+
+      def updateAssociatedSkill(skillId: UUID, duration: Long, time: LocalDateTime): Future[SkillView] = {
+        planningService.updatePractisedHours(skillId, duration, time)
+      }
+
+      def updateAssociatedSkills(skills: Seq[AssociatedSkillView], duration: Long, time: LocalDateTime): Future[Seq[SkillView]] = {
+        Future.sequence(skills.map(skill => updateAssociatedSkill(skill.skillId, duration, time)))
+      }
+
+      def updateLastMeet(date: LocalDate): RelationshipUpdate = {
+        RelationshipUpdate(
+          name = None,
+          category = None,
+          traits = None,
+          likes = None,
+          dislikes = None,
+          hobbies = None,
+          lastMeet = Some(date)
+        )
+      }
+
+      def updateRelationship(relationshipId: UUID, date: LocalDate): Future[RelationshipView] = {
+        planningService.updateRelationship(relationshipId, updateLastMeet(date))
+      }
+
+      def updateRelationships(relationships: Seq[UUID], date: LocalDate): Future[Seq[RelationshipView]] = {
+        Future.sequence(relationships.map(relationshipId => updateRelationship(relationshipId, date)))
       }
 
       def updateBlocks(blocks: Seq[UpdateScheduledTimeBlock]): Future[Boolean] = {
@@ -377,15 +408,17 @@ trait DefaultTimetableServiceComponent extends TimetableServiceComponent {
           blocks.filter(_.done).map { block =>
             db.run(repo.getSlot(block.start, block.finish)).flatMap { slot =>
               slot.collect {
-                case concrete @ ConcreteBlock(_, _, task) => for {
-                  associatedSkills <- fetchAssociatedSkills(task.taskId, task.`type`)
-                  updatedSkills <- updateAssociatedSkills(associatedSkills, concrete.durationInMillis)
-                } yield updatedSkills
-              }.getOrElse(Future.successful(Nil))
+                case concrete @ ConcreteBlock(_, finish, task) => for {
+                  valueDimensions <- fetchValueDimensions(task.taskId, task.`type`)
+                  (associatedSkills, relationships) = valueDimensions
+                  updatedSkills <- updateAssociatedSkills(associatedSkills, concrete.durationInMillis, timer.today.atTime(finish))
+                  updatedRelationships <- updateRelationships(relationships, timer.today)
+                } yield (updatedSkills, updatedRelationships)
+              }.getOrElse(Future.successful((Nil, Nil)))
             }
           }
-        }{ updatedSkills =>
-          updatedSkills.map(skills => skills.nonEmpty)
+        }{ updatedValueDimensions =>
+          updatedValueDimensions.map(valueDimensions => valueDimensions._1.nonEmpty || valueDimensions._2.nonEmpty)
         }.map(_.exists(boolean => boolean))
       }
 

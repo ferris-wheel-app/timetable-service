@@ -116,41 +116,44 @@ object SampleData {
 
   val skillCategoryCreation = SkillCategoryCreation(
     name = "Functional Programming",
-    categoryId = UUID.randomUUID
+    parentCategory = Some(UUID.randomUUID)
   )
 
   val skillCategoryUpdate = SkillCategoryUpdate(
     name = Some("Functional Programming"),
-    categoryId = Some(UUID.randomUUID)
+    parentCategory = Some(UUID.randomUUID)
   )
 
   val skillCategory = SkillCategoryView(
     uuid = UUID.randomUUID,
     name = "Functional Programming",
-    categoryId = UUID.randomUUID
+    parentCategory = Some(UUID.randomUUID)
   )
 
   val skillCreation = SkillCreation(
     name = "Cats",
-    categoryId = UUID.randomUUID,
+    parentCategory = UUID.randomUUID,
     proficiency = "intermediate",
     practisedHours = 500L
   )
 
   val skillUpdate = SkillUpdate(
     name = Some("Cats"),
-    categoryId = Some(UUID.randomUUID),
+    parentCategory = Some(UUID.randomUUID),
     proficiency = Some("intermediate"),
-    practisedHours = Some(500L)
+    practisedHours = Some(500L),
+    lastPractise = Some(LocalDateTime.now)
   )
 
   val skill = SkillView(
     uuid = UUID.randomUUID,
     name = "Cats",
-    categoryId = UUID.randomUUID,
+    parentCategory = UUID.randomUUID,
     proficiency = "intermediate",
     practisedHours = 500L,
-    lastApplied = Some(LocalDateTime.now)
+    createdOn = LocalDateTime.now,
+    lastModified = None,
+    lastApplied = None
   )
 
   val associatedSkillInsertion = AssociatedSkillInsertion(
@@ -165,12 +168,33 @@ object SampleData {
     level = "intermediate"
   )
 
+  val relationship = RelationshipView(
+    uuid = UUID.randomUUID,
+    name = "Daniel Larusso",
+    category = "friends",
+    traits = "focused" :: "disciplined" :: Nil,
+    likes = "karate" :: "cars" :: Nil,
+    dislikes = "bullies" :: Nil,
+    hobbies = "karate" :: Nil,
+    createdOn = LocalDateTime.now,
+    lastModified = Some(LocalDateTime.now),
+    lastMeet = Some(LocalDate.now)
+  )
+
+  val valueDimensions = ValueDimensionsView(
+    associatedMissions = UUID.randomUUID :: Nil,
+    associatedSkills = associatedSkill :: Nil,
+    relationships = UUID.randomUUID :: Nil,
+    helpsSafetyNet = true,
+    expandsWorldView = true
+  )
+
   val thread = ThreadView(
     uuid = UUID.randomUUID,
     goalId = Some(UUID.randomUUID),
     summary = "Go for a run",
     description = "Go for a run",
-    associatedSkills = associatedSkill :: Nil,
+    valueDimensions = valueDimensions,
     performance = "on-track",
     createdOn = LocalDateTime.now,
     lastModified = None,
@@ -182,7 +206,7 @@ object SampleData {
     goalId = Some(UUID.randomUUID),
     summary = "Organise a tech lecture",
     description = "Create a presentation about Kafka",
-    associatedSkills = associatedSkill :: Nil,
+    valueDimensions = valueDimensions,
     `type` = "PDR",
     status = "planned",
     createdOn = LocalDateTime.now,
@@ -194,7 +218,7 @@ object SampleData {
     uuid = UUID.randomUUID,
     laserDonutId = UUID.randomUUID,
     summary = "Write tests for the TimetableService.",
-    associatedSkills = associatedSkill :: Nil,
+    valueDimensions = valueDimensions,
     order = 1,
     status = "planned",
     createdOn = LocalDateTime.now,
@@ -207,7 +231,7 @@ object SampleData {
     goalId = Some(UUID.randomUUID),
     summary = "Yoga",
     description = "Train in Acro-Yoga",
-    associatedSkills = associatedSkill :: Nil,
+    valueDimensions = valueDimensions,
     frequency = "continuous",
     `type` = "active",
     createdOn = LocalDateTime.now,
